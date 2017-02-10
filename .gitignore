@@ -1,0 +1,14 @@
+*.pyc
+venv
+*~
+*.log
+node_modules
+templates/*/
+__pycache__/
+.coverage
+tests/cover
+*.swp
+config.json
+config-test.json
+.cache
+*.prof
