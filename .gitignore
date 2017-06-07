@@ -12,3 +12,4 @@ config.json
 config-test.json
 .cache
 *.prof
+.ropeproject

@@ -10,23 +10,21 @@ from commands.unit import UnitCommand
 
 class TestTemplate(object):
 
-       def __init__(self):
-              pass
+    def __init__(self):
+        pass
 
-       def execute(self, context, params):
-              return math.sqrt(context['x'])
+    def execute(self, context, params):
+        return math.sqrt(context['x'])
 
 
 class TestUnitCommand(unittest.TestCase):
 
-       def setUp(self):
-              self.template = 'math'
-              self.module_registry = {}
-              self.module_registry[self.template] = TestTemplate()
+    def setUp(self):
+        pass
 
-       def test_execute(self):
-              command = UnitCommand(1, self.module_registry, self.template, {})
-              self.assertEquals(2., command.execute({'x': 4}))
+    def test_execute(self):
+        command = UnitCommand(1, lambda ctx: math.sqrt(ctx['x']))
+        self.assertEquals(2., command.execute({'x': 4}))
 
-       def tearDown(self):
-              pass
+    def tearDown(self):
+        pass
