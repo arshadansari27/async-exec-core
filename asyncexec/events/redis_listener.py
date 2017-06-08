@@ -13,9 +13,9 @@ async def write_response(connection, queue, response, event_id):
 async def run_redis_listener(loop, listener, queue_req, queue_res):
 	retries = 0
 	while True:
+		listen_connection = await asyncio_redis.Connection.create(host='127.0.0.1', port=6379)
+		send_connection = await asyncio_redis.Connection.create(host='127.0.0.1', port=6379)
 		try:
-			listen_connection = await asyncio_redis.Connection.create(host='127.0.0.1', port=6379)
-			send_connection = await asyncio_redis.Connection.create(host='127.0.0.1', port=6379)
 			subscriber = await listen_connection.start_subscribe()
 
 			await subscriber.subscribe([ queue_req ])
@@ -35,5 +35,6 @@ async def run_redis_listener(loop, listener, queue_req, queue_res):
 				print("Enough Retries, breaking out of listener, restart the listener...")
 				break
 		finally:
-			connection.close()
+			listen_connection.close()
+			send_connection.close()
 

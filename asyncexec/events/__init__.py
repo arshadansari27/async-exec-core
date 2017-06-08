@@ -30,7 +30,6 @@ class Listener(object):
             print("[*] No handler is registered for this event")
             return None
         data = event['data']
-        print ("[*] Handling event", event['event'], 'with data', data)
         return self.subscribers[event['event']].handle(data)
 
     @staticmethod
