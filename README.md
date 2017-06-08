@@ -6,7 +6,18 @@ pubsub with redis and future work includes plan for using zmq. Problem with
 redis pubsub method is that it is not scalable for direct messaging, only
 broadcast messages are scalable.
 
-Requirements: Python 3.5+, rabbitmq or redis
+
+Requirements: 
+-------------
+
+* Python 3.5+, 
+* rabbitmq or redis
+
+Installation: 
+-------------
+pip install https://github.com/arshadansari27/async-exec-core.git@v0.1
+
+
 
 How it works
 ------------
