@@ -23,11 +23,11 @@ async def run_redis_listener(loop, listener, queue_req, queue_res):
 			while True:
 				reply = await subscriber.next_published()
 				event = json.loads(reply.value)
-				response = listener.handle(event)
 				if not event.get('id'):
 					event['id'] = uuid4()
 				event_id = event['id']
 				print('REQ', event_id)
+				response = listener.handle(event)
 				await write_response(send_connection, queue_res, response, event_id)
 		except:
 			retries += 1
