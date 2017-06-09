@@ -19,6 +19,10 @@ project is best fit for new start ups working with working knowledge of python,
 to setup daemon services and worry only about the business logic instead of
 setting up the infrastructure code in their project.
 
+NOTE: HTTP listener is for debugging purpose and can also be used to handle
+requests and run the corresponding handler by giving the name of the queue as
+the path and body as json of the requests /<queue>.
+
 
 License:
 --------
