@@ -4,6 +4,7 @@ import simplejson as json
 from .events import Listener, Handler
 from .channels.redis_b import run_redis_listener
 from .channels.rabbitmq import run_rabbitmq_listener
+from .channels.http_handler import  create_http_listener
 
 async def main(loop, listener, configurations, channel_wise_queues):
 
@@ -20,6 +21,8 @@ async def main(loop, listener, configurations, channel_wise_queues):
             if 'rabbitmq' not in channel_wise_queues:
                 continue
             coro_listeners.append(run_rabbitmq_listener(loop, listener, host, port, username, password, channel_wise_queues['rabbitmq']))
+        elif k == 'http':
+            coro_listeners.append(create_http_listener(loop, listener, port))
         else:
             raise Exception("Channel not supported")
     await asyncio.gather(*coro_listeners)
@@ -46,6 +49,11 @@ class AsyncExecutor(object):
             username = redis.get('user', 'guest')
             password = redis.get('password', 'guest')
             self.channel_configurations['redis'] = (host, port, username, password)
+
+        if 'http' in configurations:
+            http = configurations['http']
+            port = http['port']
+            self.channel_configurations['http'] = (None, port, None, None)
 
     def start(self):
         loop = asyncio.get_event_loop()

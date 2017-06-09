@@ -38,8 +38,12 @@ class Listener(object):
         if queue_req not in self.subscribers:
             print("[*] No handler is registered for this event")
             return None
-        result = self.subscribers[queue_req].handle(event)
+        if queue_resp:
+            result = self.subscribers[queue_req].handle(event)
+        else:
+            result = await self.subscribers[queue_req].handle(event)
         if queue_resp is None:
+            print("No response to be generated")
             return None
         response = {'id': event['id'], 'response': (await result)}
         print("[*] Response: ", response, '\n')

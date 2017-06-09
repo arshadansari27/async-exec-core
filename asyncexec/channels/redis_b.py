@@ -22,7 +22,10 @@ async def run_redis_listener(loop, listener, host, port, queues):
 
 
 async def listen_on_request(loop, pool, listener, queue_req, queue_res):
-    wr = partial(write_response, pool=pool)
+    if queue_res:
+        wr = partial(write_response, pool=pool)
+    else:
+        wr = None
     with (await pool) as redis:
         while True:
             _, event = await redis.blpop(queue_req)

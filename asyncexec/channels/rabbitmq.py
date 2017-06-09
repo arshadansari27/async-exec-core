@@ -11,7 +11,10 @@ async def write_response(queue, response, exchange):
 
 
 def on_message(loop, exchange, queue_req, queue_res, listener):
-    wr = partial(write_response, exchange=exchange)
+    if exchange:
+        wr = partial(write_response, exchange=exchange)
+    else:
+        wr = None
     def message_handler(message):
         with message.process() as mb:
             loop.create_task(listener.handle(message.body, loop, queue_req, queue_res, wr))
@@ -27,6 +30,9 @@ async def run_rabbitmq_listener(loop, listener, host, port, username, password, 
         queue = await channel.declare_queue(exclusive=True)
         await queue.bind(incoming_exchange, routing_key='async_core')
 
-        channel = await connection.channel()
-        sending_exchange = await channel.declare_exchange(queue_res, ExchangeType.DIRECT)
+        if queue_res:
+            channel = await connection.channel()
+            sending_exchange = await channel.declare_exchange(queue_res, ExchangeType.DIRECT)
+        else:
+            sending_exchange = None
         queue.consume(on_message(loop, sending_exchange, queue_req, queue_res, listener))
