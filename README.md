@@ -37,7 +37,7 @@ Requirements:
 
 Installation: 
 -------------
-pip install git+https://github.com/arshadansari27/async-exec-core.git@v0.1
+pip install git+https://github.com/arshadansari27/async-exec-core.git
 
 
 
