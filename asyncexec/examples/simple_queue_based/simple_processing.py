@@ -5,20 +5,26 @@ from asyncexec.exec import  AsyncExecutor
 
 
 async_executor = AsyncExecutor({
-    "rabbitmq": [
-        ['pyasync_core_request', 'pyasync_core_result']
-    ]
+    "redis": {
+        "host": "localhost",
+        "port": 6379
+    },
+    "rabbitmq": {
+        "host": "localhost",
+        "port": '',
+        "username": "guest",
+        "password": "guest"
+    }
 })
-''',
-    "redis": [
-        ['pyasync_core_request', 'pyasync_core_result']
-    ]
-'''
 
-
-@async_executor.handler
-def test_method(data):
+@async_executor.handler('rabbitmq', 'req_queue1', 'res_queue1')
+def test_method1(data):
     print("Hello", data)
+    return 'result'
+
+@async_executor.handler('redis', 'req_queue2', 'res_queue2')
+def test_method2(data):
+    print("Bye", data)
     return str(data) + ': response'
 
 

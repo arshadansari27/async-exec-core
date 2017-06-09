@@ -2,45 +2,65 @@ import asyncio
 import asyncio_redis
 import simplejson as json
 from .events import Listener, Handler
-from .channels.redis import run_redis_listener
+from .channels.redis_b import run_redis_listener
 from .channels.rabbitmq import run_rabbitmq_listener
 
-async def main(loop, coro_listeners):
-    coro_listeners = [l[0](loop, l[1], l[2], l[3]) for l in coro_listeners]
+async def main(loop, listener, configurations, channel_wise_queues):
+
+    coro_listeners = []
+    for k, v in configurations.items():
+        print ("Checking listeners for ", k, "...")
+        host, port, username, password = v
+        if k == 'redis':
+            if 'redis' not in channel_wise_queues:
+                continue
+            print ("Starting ", k, "...")
+            coro_listeners.append(run_redis_listener(loop, listener, host, port, channel_wise_queues['redis']))
+        elif k == 'rabbitmq':
+            if 'rabbitmq' not in channel_wise_queues:
+                continue
+            coro_listeners.append(run_rabbitmq_listener(loop, listener, host, port, username, password, channel_wise_queues['rabbitmq']))
+        else:
+            raise Exception("Channel not supported")
     await asyncio.gather(*coro_listeners)
 
 class AsyncExecutor(object):
 
     def __init__(self, configurations):
         self.listener = Listener()
-        self.coroutinues = []
+        self.channel_configurations = {}
+        self.channel_wise_queues = {}
 
         if 'rabbitmq' in configurations:
-            for queues in configurations['rabbitmq']:
-                self.coroutinues.append(
-					(run_rabbitmq_listener,
-					self.listener,
-					queues[0],
-					queues[1])
-				)
-
+            rabbitmq = configurations['rabbitmq']
+            host = rabbitmq['host']
+            port = rabbitmq['port']
+            username = rabbitmq.get('user', 'guest')
+            password = rabbitmq.get('password', 'guest')
+            self.channel_configurations['rabbitmq'] = (host, port, username, password)
 
         if 'redis' in configurations:
-            for queues in configurations['redis']:
-                self.coroutinues.append(
-					(run_redis_listener,
-					self.listener,
-					queues[0],
-					queues[1])
-				)
+            redis = configurations['redis']
+            host = redis['host']
+            port = redis['port']
+            username = redis.get('user', 'guest')
+            password = redis.get('password', 'guest')
+            self.channel_configurations['redis'] = (host, port, username, password)
 
     def start(self):
         loop = asyncio.get_event_loop()
-        loop.create_task(main(loop, self.coroutinues))
+        loop.create_task(main(loop, self.listener, self.channel_configurations, self.channel_wise_queues))
         loop.run_forever()
 
-    def handler(self, func):
-        print(func.__name__)
-        self.listener.register_handler(Handler(func.__name__, func))
-        return func
+    def handler(self, channel, queue_request, queue_response):
+        def decorator(func):
+            print ("Registering handler {} for channel: {} on queues ({}, {})".format(
+                func.__name__, channel, queue_request, queue_response
+            ))
+            if channel not in self.channel_wise_queues:
+                self.channel_wise_queues[channel] = []
+            self.channel_wise_queues[channel].append((queue_request, queue_response,))
+            self.listener.register_handler(Handler(queue_request, func))
+            return func
+        return decorator
 

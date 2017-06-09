@@ -11,10 +11,9 @@ async def main(loop):
     # Creating a channel
     channel = await connection.channel()
 
-    logs_exchange = await channel.declare_exchange('pyasync_core_request', ExchangeType.DIRECT)
+    logs_exchange = await channel.declare_exchange('req_queue1', ExchangeType.DIRECT)
 
     message_body = json.dumps({
-		'event': 'test_method',
 		'data': 10
 	}).encode('utf-8')
 

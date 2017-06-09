@@ -18,7 +18,7 @@ async def main():
     await channel.set_qos(prefetch_count=1)
 
     logs_exchange = await channel.declare_exchange(
-        'pyasync_core_result',
+        'res_queue1',
         ExchangeType.DIRECT
     )
 

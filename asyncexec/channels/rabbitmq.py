@@ -1,41 +1,32 @@
 import sys
 import asyncio
 from aio_pika import connect, Message, DeliveryMode, ExchangeType
-import simplejson as json
-from uuid import uuid4
 import copy
+from functools import partial
 
-async def write_response(exchange, queue, response, event_id):
-	response = await response
-	print('RESP', event_id)
-	result = json.dumps(dict(id=str(event_id), response=response)).encode('utf-8')
-	message = Message(result, delivery_mode=DeliveryMode.PERSISTENT)
+async def write_response(queue, response, exchange):
+	print('RESP', response)
+	message = Message(response.encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
 	await exchange.publish(message, routing_key='async_core')
 
 
-def on_message(loop, exchange, queue, listener):
-	print ("setting up handler", queue)
-	def message_handler(message):
-		with message.process() as mb:
-			event = json.loads(message.body)
-			if not event.get('id'):
-				event['id'] = uuid4()
-			event_id = event['id']
-			response = listener.handle(copy.copy(event))
-			print('REQ', event_id)
-			loop.create_task(write_response(exchange, queue, response, event_id))
-	return message_handler
+def on_message(loop, exchange, queue_req, queue_res, listener):
+    wr = partial(write_response, exchange=exchange)
+    def message_handler(message):
+        with message.process() as mb:
+            loop.create_task(listener.handle(message.body, loop, queue_req, queue_res, wr))
+    return message_handler
 
 
-async def run_rabbitmq_listener(loop, listener, queue_req, queue_res):
-	connection = None
-	connection = await connect("amqp://guest:guest@localhost/", loop=loop)
-	channel1 = await connection.channel()
-	await channel1.set_qos(prefetch_count=1)
-	incoming_exchange = await channel1.declare_exchange(queue_req, ExchangeType.DIRECT)
-	queue = await channel1.declare_queue(exclusive=True)
-	await queue.bind(incoming_exchange, routing_key='async_core')
+async def run_rabbitmq_listener(loop, listener, host, port, username, password, queues):
+    connection = await connect("amqp://" + username + ":" + password + "@" + host + "/", loop=loop)
+    for queue_req, queue_res in queues:
+        channel = await connection.channel()
+        await channel.set_qos(prefetch_count=1)
+        incoming_exchange = await channel.declare_exchange(queue_req, ExchangeType.DIRECT)
+        queue = await channel.declare_queue(exclusive=True)
+        await queue.bind(incoming_exchange, routing_key='async_core')
 
-	channel2 = await connection.channel()
-	sending_exchange = await channel2.declare_exchange(queue_res, ExchangeType.DIRECT)
-	queue.consume(on_message(loop, sending_exchange, queue_res, listener))
+        channel = await connection.channel()
+        sending_exchange = await channel.declare_exchange(queue_res, ExchangeType.DIRECT)
+        queue.consume(on_message(loop, sending_exchange, queue_req, queue_res, listener))

@@ -1,3 +1,6 @@
+import simplejson as json
+from uuid import uuid4
+
 class Handler(object):
 
     def __init__(self, key, callback):
@@ -7,6 +10,7 @@ class Handler(object):
         self.callback = callback
 
     async def handle(self, data):
+        print ("[*] Calling handler")
         return self.callback(data)
 
 
@@ -25,12 +29,21 @@ class Listener(object):
             return
         del self.subscribers[subsciber_key]
 
-    def handle(self, event):
-        if event['event'] not in self.subscribers:
+    async def handle(self, event, loop, queue_req, queue_resp, callback):
+        event = json.loads(event)
+        if not event.get('id'):
+            event['id'] = str(uuid4())
+        else:
+            event['id'] = str(event['id'])
+        if queue_req not in self.subscribers:
             print("[*] No handler is registered for this event")
             return None
-        data = event['data']
-        return self.subscribers[event['event']].handle(data)
+        result = self.subscribers[queue_req].handle(event)
+        if queue_resp is None:
+            return None
+        response = {'id': event['id'], 'response': (await result)}
+        print("[*] Response: ", response, '\n')
+        loop.create_task(callback(queue_resp, json.dumps(response)))
 
     @staticmethod
     def create_listener():
