@@ -6,24 +6,23 @@ import simplejson as json
 
 async def main(loop):
     # Perform connection
-    connection = await connect("amqp://guest:guest@localhost/", loop=loop)
+    connection = await connect("amqp://user:password@172.17.0.2/", loop=loop)
 
     # Creating a channel
     channel = await connection.channel()
 
     logs_exchange = await channel.declare_exchange('req_queue1', ExchangeType.DIRECT)
 
-    message_body = json.dumps({
-		'data': 10
-	}).encode('utf-8')
+    for i in range(1000000):
 
-    message = Message(
-        message_body,
-        delivery_mode=DeliveryMode.PERSISTENT
-    )
+        message_body = json.dumps({'data': 10}).encode('utf-8')
 
-    # Sending the message
-    await logs_exchange.publish(message, routing_key='async_core')
+        message = Message(
+            message_body,
+            delivery_mode=DeliveryMode.PERSISTENT
+        )
+
+        await logs_exchange.publish(message, routing_key='async_core')
 
     # print(" [x] Sent %r" % message)
 

@@ -4,7 +4,6 @@ import os
 import unittest
 import sys
 sys.path.insert(0, os.getcwd())
-import models_test
 from commands import Command
 from commands.unit import UnitCommand
 from commands.composite import SequentialCommandGroup, ParallelCommandGroup

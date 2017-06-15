@@ -5,25 +5,27 @@ import copy
 from functools import partial
 
 async def write_response(queue, response, exchange):
-	print('RESP', response)
-	message = Message(response.encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
-	await exchange.publish(message, routing_key='async_core')
+    print('RESP', response)
+    message = Message(response.encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
+    await exchange.publish(message, routing_key='async_core')
 
 
-def on_message(loop, exchange, queue_req, queue_res, listener):
+def on_message(loop, exchange, queue_req, queue_res, multiprocess, listener):
     if exchange:
         wr = partial(write_response, exchange=exchange)
     else:
         wr = None
     def message_handler(message):
         with message.process() as mb:
-            loop.create_task(listener.handle(message.body, loop, queue_req, queue_res, wr))
+            loop.create_task(listener.handle(message.body, loop, queue_req, queue_res, multiprocess, wr))
     return message_handler
 
 
 async def run_rabbitmq_listener(loop, listener, host, port, username, password, queues):
-    connection = await connect("amqp://" + username + ":" + password + "@" + host + "/", loop=loop)
-    for queue_req, queue_res in queues:
+    con_uri = "amqp://" + username + ":" + password + "@" + host + "/"
+    print("Rabbitmq:", con_uri)
+    connection = await connect(con_uri, loop=loop)
+    for queue_req, queue_res, multiprocess in queues:
         channel = await connection.channel()
         await channel.set_qos(prefetch_count=1)
         incoming_exchange = await channel.declare_exchange(queue_req, ExchangeType.DIRECT)
@@ -35,4 +37,4 @@ async def run_rabbitmq_listener(loop, listener, host, port, username, password, 
             sending_exchange = await channel.declare_exchange(queue_res, ExchangeType.DIRECT)
         else:
             sending_exchange = None
-        queue.consume(on_message(loop, sending_exchange, queue_req, queue_res, listener))
+        queue.consume(on_message(loop, sending_exchange, queue_req, queue_res, multiprocess, listener))

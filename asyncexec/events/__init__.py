@@ -1,5 +1,8 @@
 import simplejson as json
+from concurrent.futures import ProcessPoolExecutor
 from uuid import uuid4
+        
+process_pool_executor = ProcessPoolExecutor(max_workers=3)
 
 class Handler(object):
 
@@ -9,10 +12,18 @@ class Handler(object):
         self.key = key
         self.callback = callback
 
-    async def handle(self, data):
+    def handle(self, data):
         print ("[*] Calling handler")
         return self.callback(data)
 
+async def run_in_executor_and_response_async(handler, event):
+    return run_in_executor_and_response(handler, event)
+
+def run_in_executor_and_response(handler, event):
+    result = handler.handle(event)
+    response = {'id': event['id'], 'response': result}
+    print("[*] Response: ", response, '\n')
+    return json.dumps(response)
 
 class Listener(object):
 
@@ -29,7 +40,7 @@ class Listener(object):
             return
         del self.subscribers[subsciber_key]
 
-    async def handle(self, event, loop, queue_req, queue_resp, callback):
+    async def handle(self, event, loop, queue_req, queue_resp=None, multiprocess=True, callback=None):
         event = json.loads(event)
         if not event.get('id'):
             event['id'] = str(uuid4())
@@ -38,16 +49,19 @@ class Listener(object):
         if queue_req not in self.subscribers:
             print("[*] No handler is registered for this event")
             return None
-        if queue_resp:
-            result = self.subscribers[queue_req].handle(event)
+        event_handler = self.subscribers[queue_req]
+        if multiprocess:
+            response = await loop.run_in_executor(process_pool_executor, 
+                             run_in_executor_and_response, event_handler, event)
         else:
-            result = await self.subscribers[queue_req].handle(event)
-        if queue_resp is None:
+            response = await loop.create_task(run_in_executor_and_response_async(event_handler, event))
+        if queue_resp:
+            await callback(queue_resp, response)
+        else:
             print("No response to be generated")
             return None
-        response = {'id': event['id'], 'response': (await result)}
-        print("[*] Response: ", response, '\n')
-        loop.create_task(callback(queue_resp, json.dumps(response)))
+        return response
+
 
     @staticmethod
     def create_listener():
