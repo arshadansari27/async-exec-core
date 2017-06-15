@@ -1,17 +1,33 @@
 import asyncio
 from aio_pika import connect, IncomingMessage, ExchangeType
+from datetime import datetime
 
 loop = asyncio.get_event_loop()
 
+first_message = False
+arrival_begin_time_stamp = None
+message_count = 0
+
 
 def on_message(message: IncomingMessage):
+    global first_message, message_count, arrival_begin_time_stamp
     with message.process():
-        print("[x] %r" % message.body)
+        if not first_message:
+            first_message = True
+            arrival_begin_time_stamp = datetime.now()
+        d = datetime.now() - arrival_begin_time_stamp
+        dd = d.days
+        ds = d.seconds
+        diff = (3600 * 24) * dd + ds 
+        message_count += 1.
+
+        
+        print("[x] %r" % message.body, message_count / diff if diff > 0 else message_count)
 
 
 async def main():
     # Perform connection
-    connection = await connect("amqp://guest:guest@localhost/", loop=loop)
+    connection = await connect("amqp://user:password@172.17.0.2/", loop=loop)
 
     # Creating a channel
     channel = await connection.channel()

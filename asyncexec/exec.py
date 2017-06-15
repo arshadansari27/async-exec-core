@@ -10,7 +10,7 @@ async def main(loop, listener, configurations, channel_wise_queues):
 
     coro_listeners = []
     for k, v in configurations.items():
-        print ("Checking listeners for ", k, "...")
+        print ("Checking listeners for ", k, "...", v)
         host, port, username, password = v
         if k == 'redis':
             if 'redis' not in channel_wise_queues:
@@ -38,7 +38,7 @@ class AsyncExecutor(object):
             rabbitmq = configurations['rabbitmq']
             host = rabbitmq['host']
             port = rabbitmq['port']
-            username = rabbitmq.get('user', 'guest')
+            username = rabbitmq.get('username', 'guest')
             password = rabbitmq.get('password', 'guest')
             self.channel_configurations['rabbitmq'] = (host, port, username, password)
 
@@ -60,14 +60,14 @@ class AsyncExecutor(object):
         loop.create_task(main(loop, self.listener, self.channel_configurations, self.channel_wise_queues))
         loop.run_forever()
 
-    def handler(self, channel, queue_request, queue_response):
+    def handler(self, channel, queue_request, queue_response, multiprocess=True):
         def decorator(func):
             print ("Registering handler {} for channel: {} on queues ({}, {})".format(
                 func.__name__, channel, queue_request, queue_response
             ))
             if channel not in self.channel_wise_queues:
                 self.channel_wise_queues[channel] = []
-            self.channel_wise_queues[channel].append((queue_request, queue_response,))
+            self.channel_wise_queues[channel].append((queue_request, queue_response, multiprocess))
             self.listener.register_handler(Handler(queue_request, func))
             return func
         return decorator
