@@ -1,6 +1,7 @@
 import asyncio
 import asyncio_redis
 import simplejson as json
+import uvloop
 from .events import Listener, Handler
 from .channels.redis_b import run_redis_listener
 from .channels.rabbitmq import run_rabbitmq_listener
@@ -56,7 +57,9 @@ class AsyncExecutor(object):
             self.channel_configurations['http'] = (None, port, None, None)
 
     def start(self):
-        loop = asyncio.get_event_loop()
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+        loop = uvloop.new_event_loop()
+        asyncio.set_event_loop(loop)
         loop.create_task(main(loop, self.listener, self.channel_configurations, self.channel_wise_queues))
         loop.run_forever()
 
