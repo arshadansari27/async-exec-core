@@ -51,15 +51,18 @@ as for making complex workflows using parallel and sequential command groups.
 Release notes:
 --------------
 
-* v0.1 Tag contains
+* v0.1.0 Tag contains
+    - Based on asyncio module of python 3.6
     - RabbitMQ support
     - Redis Support
     - HTTP support
     - Workflows creation using ParallelCommandGroup and SequentialCommandGroup
     - Simple annotation based addition of handlers (daemon service) like in the
       case of celery or flask
+    - Queue based handler definition association through decorators. Check examples
+    - Multiprocessing support for individual handlers
+    - Workflows supporting sequential and parallel command groups with their combinations
     - Multiprocessing support with ParallelCommandGroup
-    - Based on asyncio module of python 3.5
 
 Micro Benchmark Results
 -----------------------
