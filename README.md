@@ -78,7 +78,8 @@ Machine details:
 | --- | --- | --- | --- | --- |
 | Trivial (do nothing) |  ~ 450 req/sec | ~ 750 req/sec | ~ 900 req/sec | ~ 1600 req/sec |
 | time.sleep(.1) | ~ 30 req/sec | ~ 10 req/sec | ~ 29 req/sec | ~ 8 req/sec |
-| time.sleep(1) | ~ 3.5 req/sec | ~ 1.5 req/sec | 2.8 req/sec | 0.9 req/sec |
+| time.sleep(1) | ~ 3.5 req/sec | ~ 1.5 req/sec | ~ 2.8 req/sec | ~ 1 req/sec |
+
 
 
 
