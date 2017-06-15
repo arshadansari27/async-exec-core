@@ -61,12 +61,34 @@ Release notes:
     - Multiprocessing support with ParallelCommandGroup
     - Based on asyncio module of python 3.5
 
+Micro Benchmark Results
+-----------------------
+
+Machine details:
+* Ubuntu 17.04
+* Intel i5, 2 physical cores and in total 4 virtual cores
+* 16 GB RAM
+* Caveats:
+	- Redis and RabbitMQ running on a docker on the same machine
+	- The publisher and the subscriber were also running on the same machine
+	- The Publisher was pushing messages sequentially
+	- Multiprocessing had 3 workers
+
+|Task Details | Rabbit MQ (multiprocessing enabled) | Rabbit MQ (without multiprocessing enabled) | Redis (multiprocessing enabled) | Redis (without multiprocessing enabled) |
+| --- | --- | --- | --- | --- |
+| Trivial (do nothing) |  ~ 450 req/sec | ~ 750 req/sec | ~ 900 req/sec | ~ 1600 req/sec |
+| time.sleep(.1) | ~ 30 req/sec | ~ 10 req/sec | ~ 29 req/sec | ~ 8 req/sec |
+| time.sleep(1) | ~ 3.5 req/sec | ~ 1.5 req/sec | 2.8 req/sec | 0.9 req/sec |
+
+
+
+
+
 
 ROAD MAP (upcoming):
 --------------------
     * ZMQ support
     * Kafka support
-    * Benchmarking reports against existing systems
 
 
 Contribution and Other information:
