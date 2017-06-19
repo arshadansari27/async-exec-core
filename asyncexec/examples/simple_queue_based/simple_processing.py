@@ -3,6 +3,10 @@ sys.path.insert(0, '../../../')
 
 from asyncexec.exec import  AsyncExecutor
 '''
+    "redis": {
+        "host": "172.17.0.3",
+        "port": 6379
+    }
     "rabbitmq": {
         "host": "172.17.0.2",
         "port": '',
@@ -12,13 +16,15 @@ from asyncexec.exec import  AsyncExecutor
 '''
 
 async_executor = AsyncExecutor({
-    "redis": {
-        "host": "172.17.0.3",
-        "port": 6379
+    "rabbitmq": {
+        "host": "172.17.0.2",
+        "port": '',
+        "username": "user",
+        "password": "password"
     }
 })
 import time
-@async_executor.handler('redis', 'req_queue1', 'res_queue1', multiprocess=True)
+@async_executor.handler('rabbitmq', 'req_queue1', 'res_queue1', multiprocess=True)
 def test_method1(data):
     return 'result'
 

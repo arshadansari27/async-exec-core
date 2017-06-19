@@ -13,9 +13,9 @@ async def main(loop):
 
     logs_exchange = await channel.declare_exchange('req_queue1', ExchangeType.DIRECT)
 
-    for i in range(1000000):
+    for i in range(1):
 
-        message_body = json.dumps({'data': 10}).encode('utf-8')
+        message_body = json.dumps({'pi': '1049261'}).encode('utf-8')
 
         message = Message(
             message_body,
@@ -24,7 +24,7 @@ async def main(loop):
 
         await logs_exchange.publish(message, routing_key='async_core')
 
-    # print(" [x] Sent %r" % message)
+        print(" [x] Sent %r" % message_body)
 
     await connection.close()
 

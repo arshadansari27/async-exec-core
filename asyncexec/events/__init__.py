@@ -2,7 +2,6 @@ import simplejson as json
 from concurrent.futures import ProcessPoolExecutor
 from uuid import uuid4
         
-process_pool_executor = ProcessPoolExecutor(max_workers=3)
 
 class Handler(object):
 
@@ -27,8 +26,9 @@ def run_in_executor_and_response(handler, event):
 
 class Listener(object):
 
-    def __init__(self):
+    def __init__(self, workers=4):
         self.subscribers = {}
+        self.process_pool_executor = ProcessPoolExecutor(max_workers=4)
 
     def subscribe(self, subscriber):
         if subscriber in self.subscribers:
@@ -51,7 +51,7 @@ class Listener(object):
             return None
         event_handler = self.subscribers[queue_req]
         if multiprocess:
-            response = await loop.run_in_executor(process_pool_executor, 
+            response = await loop.run_in_executor(self.process_pool_executor, 
                              run_in_executor_and_response, event_handler, event)
         else:
             response = await loop.create_task(run_in_executor_and_response_async(event_handler, event))

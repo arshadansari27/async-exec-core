@@ -31,7 +31,11 @@ async def main(loop, listener, configurations, channel_wise_queues):
 class AsyncExecutor(object):
 
     def __init__(self, configurations):
-        self.listener = Listener()
+        workers = 4
+        if 'multiprocess' in configurations:
+            if 'workers' in configurations['multiprocess']:
+                workers = configurations['multiprocess']['workers']
+        self.listener = Listener(workers=workers)
         self.channel_configurations = {}
         self.channel_wise_queues = {}
 
