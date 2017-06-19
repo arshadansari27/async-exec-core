@@ -28,7 +28,7 @@ class Listener(object):
 
     def __init__(self, workers=4):
         self.subscribers = {}
-        self.process_pool_executor = ProcessPoolExecutor(max_workers=4)
+        self.process_pool_executor = ProcessPoolExecutor(max_workers=workers)
 
     def subscribe(self, subscriber):
         if subscriber in self.subscribers:
