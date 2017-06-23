@@ -22,8 +22,13 @@ class Channel(object):
         print(rs)
         return rs
 
+    def set_writer(self, writer):
+        self.writer = writer
+
     def write_response(self, result):
         print("[*] Writing response", result)
+        if self.writer:
+            self.writer.write_response(result)
 
     def close(self):
         self.client.close()

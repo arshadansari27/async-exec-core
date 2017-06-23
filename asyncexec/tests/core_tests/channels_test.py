@@ -10,13 +10,16 @@ class TestChannel(unittest.TestCase):
     def setUp(self):
         uri = 'tcp://*:*'
 
+        class FakeWriter:
+
+            def write_response(self, message):
+                assert message is not None
+
         @aiozmq.rpc.method
         def _handler(x, y):
             return x + y
 
-
         self.loop = asyncio.get_event_loop()
-
         handlers = {
             'test_handler': _handler
         }
@@ -34,10 +37,12 @@ class TestChannel(unittest.TestCase):
         self.addr = addr
         self.cmd = cmd
         self.channel = None
+        self.fake_writer = FakeWriter()
 
     def test_handler(self):
         print('{*}', self.addr)
         self.channel = Channel(self.addr, 'test_handler', sync=True)
+        self.channel.set_writer(self.fake_writer)
         self.loop.run_until_complete(self.channel.initialize())
         response = self.loop.run_until_complete(self.channel.call(10, 20))
         assert response == 30
