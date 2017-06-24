@@ -37,6 +37,7 @@ class RedisChannel:
         redis = self.__class__.pool
         while True:
             _, message = await redis.blpop(self.in_queue_name)
+            print("Incoming Message on Redis Channel", message)
             selector = random.randint(0, len(self.zmq_channels) - 1)
             await self.zmq_channels[selector].call(message)
 

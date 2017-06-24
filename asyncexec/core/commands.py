@@ -14,8 +14,10 @@ class CommandHandler(aiozmq.rpc.AttrHandler):
     def handler(self, *args, **kwargs):
         if not self.func:
             raise Exception("Please set the handler before running command handler")
+        print("Got the call...")
         future = CommandRouter.pool.submit(self.func, *args, **kwargs)
         if self.sync:
+            print("responding...")
             return future.result()
         else:
             return None

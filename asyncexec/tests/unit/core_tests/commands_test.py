@@ -18,14 +18,16 @@ class TestCommandRouter(unittest.TestCase):
 
     def test_handler1(self):
         print("Running 1")
-        ret = self.loop.run_until_complete(self.client.call.test_handler1(10, 20))
+        handler_func = getattr(self.client.call, 'test_handler1')
+        ret = self.loop.run_until_complete(handler_func(10, 20))
         print('[*]', ret)
         assert ret == 30
         print("Done 1")
 
     def test_handler2(self):
         print("Running 2")
-        ret = self.loop.run_until_complete(self.client.call.test_handler2(10, 20))
+        handler_func = getattr(self.client.call, 'test_handler2')
+        ret = self.loop.run_until_complete(handler_func(10, 20))
         print('[*]', ret)
         assert ret == None
         print("Done 2")

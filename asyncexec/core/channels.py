@@ -1,6 +1,7 @@
 import asyncio
 import aiozmq
 import aiozmq.rpc
+import sys, traceback
 
 
 class Channel(object):
@@ -14,15 +15,17 @@ class Channel(object):
         self.client = await aiozmq.rpc.connect_rpc(connect=self.uri)
 
     async def call(self, *kargs, **kwargs):
-        rs = await getattr(self.client.call, 
-                     self.handler_key)(*kargs, **kwargs)
-
-        if self.sync:
-            self.write_response(rs)
-        print(rs)
-        return rs
+        try:
+            rs = await getattr(self.client.call, self.handler_key)(*kargs, **kwargs)
+            if self.sync:
+                self.write_response(rs)
+            return rs
+        except Exception as e:
+            traceback.print_exc(file=sys.stdout)
+            raise 
 
     def set_writer(self, writer):
+        print("Setting writer", writer)
         self.writer = writer
 
     def write_response(self, result):
