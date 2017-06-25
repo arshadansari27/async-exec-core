@@ -4,14 +4,14 @@ from aio_pika import connect, Message, DeliveryMode, ExchangeType
 import simplejson as json
 
 
-async def main(loop):
+async def main(loop, ip, queue, message):
     # Perform connection
-    connection = await connect("amqp://guest:guest@172.17.0.3/", loop=loop)
+    connection = await connect("amqp://guest:guest@%s/" % ip, loop=loop)
 
     # Creating a channel
     channel = await connection.channel()
 
-    logs_exchange = await channel.declare_exchange('rabbit:in_q', ExchangeType.DIRECT)
+    logs_exchange = await channel.declare_exchange(queue, ExchangeType.DIRECT)
 
     for i in range(1):
 
@@ -30,5 +30,9 @@ async def main(loop):
 
 
 if __name__ == "__main__":
+    ip = sys.argv[1]
+    queue = sys.argv[2]
+    message = sys.argv[3]
+    print ("senging to queue", queue, 'message:', message)
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main(loop))
+    loop.run_until_complete(main(loop, ip, queue, message))

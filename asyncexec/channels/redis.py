@@ -36,10 +36,12 @@ class RedisChannel:
     async def in_message_handler(self):
         redis = self.__class__.pool
         while True:
-            _, message = await redis.blpop(self.in_queue_name)
-            print("Incoming Message on Redis Channel", message)
-            selector = random.randint(0, len(self.zmq_channels) - 1)
-            await self.zmq_channels[selector].call(message)
+            while await redis.llen(self.in_queue_name) > 0:
+                print("Waiting for a new message")
+                _, message = await redis.blpop(self.in_queue_name)
+                print("Incoming Message on Redis Channel", message)
+                selector = random.randint(0, len(self.zmq_channels) - 1)
+                await self.zmq_channels[selector].call(message)
 
     def write_response(self, result):
         print("Writing Response")

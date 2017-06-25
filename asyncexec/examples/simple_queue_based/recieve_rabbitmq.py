@@ -1,6 +1,7 @@
 import asyncio
 from aio_pika import connect, IncomingMessage, ExchangeType
 from datetime import datetime
+import sys
 
 loop = asyncio.get_event_loop()
 
@@ -25,16 +26,16 @@ def on_message(message: IncomingMessage):
         print("[x] %r" % message.body, message_count / diff if diff > 0 else message_count)
 
 
-async def main():
+async def main(ip, queue):
     # Perform connection
-    connection = await connect("amqp://guest:guest@172.17.0.3/", loop=loop)
+    connection = await connect("amqp://guest:guest@%s/" % ip, loop=loop)
 
     # Creating a channel
     channel = await connection.channel()
     await channel.set_qos(prefetch_count=1)
 
     logs_exchange = await channel.declare_exchange(
-        'rabbit:out_q',
+        queue,
         ExchangeType.DIRECT
     )
 
@@ -49,9 +50,9 @@ async def main():
 
 
 if __name__ == "__main__":
+    ip = sys.argv[1]
+    queue = sys.argv[2]
     loop = asyncio.get_event_loop()
-    loop.create_task(main())
-
-    # we enter a never-ending loop that waits for data and runs callbacks whenever necessary.
-    print(' [*] Waiting for logs. To exit press CTRL+C')
+    loop.create_task(main(ip, queue))
+    print(' [*] Waiting for logs. To exit press CTRL+C. Listening on', ip, queue)
     loop.run_forever()

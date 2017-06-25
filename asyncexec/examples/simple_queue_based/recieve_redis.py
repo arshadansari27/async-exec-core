@@ -11,10 +11,10 @@ message_count = 0
 
 
 
-async def main(loop):
+async def main(loop, ip, queue):
     global first_message, message_count, arrival_begin_time_stamp
     # Perform connection
-    pool = await aioredis.create_pool(('172.17.0.3', 6379), minsize=5, maxsize=20)
+    pool = await aioredis.create_pool((ip, 6379), minsize=5, maxsize=20)
 
     with (await pool) as redis:
 
@@ -22,7 +22,7 @@ async def main(loop):
             if not first_message:
                 first_message = True
                 arrival_begin_time_stamp = datetime.now()
-            _, event = await redis.blpop('res_queue1')
+            _, event = await redis.blpop(queue)
             d = datetime.now() - arrival_begin_time_stamp
             dd = d.days
             ds = d.seconds
@@ -33,5 +33,8 @@ async def main(loop):
     pool.close()
 
 if __name__ == "__main__":
+    ip = sys.argv[1]
+    queue = sys.argv[2]
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main(loop))
+    print(' [*] Waiting for logs. To exit press CTRL+C. Listening on', ip, queue)
+    loop.run_until_complete(main(loop, ip, queue))
