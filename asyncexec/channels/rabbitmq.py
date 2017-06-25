@@ -47,12 +47,15 @@ class RabbitMQChannel:
 
     def in_message_handler(self, message):
         print("In message_handler")
-        with message.process() as mb:
+        with message.process():
             selector = random.randint(0, len(self.zmq_channels) - 1)
-            self.__class__.loop.create_task(self.zmq_channels[selector].call(message))
+            self.__class__.loop.create_task(self.zmq_channels[selector].call(message.body))
 
     def write_response(self, result):
-        print("Writing Response")
+        print("Writing Response", result)
+        if type(result) == str:
+            result = result.encode('utf-8')
+
         message = Message(result, delivery_mode=DeliveryMode.PERSISTENT)
         self.__class__.loop.create_task(self.sending_exchange.publish(message, routing_key='async_core'))
 

@@ -6,12 +6,12 @@ import simplejson as json
 
 async def main(loop):
     # Perform connection
-    connection = await connect("amqp://user:password@172.17.0.2/", loop=loop)
+    connection = await connect("amqp://guest:guest@172.17.0.3/", loop=loop)
 
     # Creating a channel
     channel = await connection.channel()
 
-    logs_exchange = await channel.declare_exchange('req_queue1', ExchangeType.DIRECT)
+    logs_exchange = await channel.declare_exchange('rabbit:in_q', ExchangeType.DIRECT)
 
     for i in range(1):
 

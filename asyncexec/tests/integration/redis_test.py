@@ -10,7 +10,7 @@ import aioredis
 @aiozmq.rpc.method
 def _handler(data):
     print ("Got the call to handler", data)
-    return 'This is a fake response'
+    return 'This is a fake response'.encode('utf-8')
 
 
 class TestRedisChannel(unittest.TestCase):

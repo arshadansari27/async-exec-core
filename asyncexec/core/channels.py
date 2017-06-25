@@ -15,6 +15,7 @@ class Channel(object):
         self.client = await aiozmq.rpc.connect_rpc(connect=self.uri)
 
     async def call(self, *kargs, **kwargs):
+        print("In channel call")
         try:
             rs = await getattr(self.client.call, self.handler_key)(*kargs, **kwargs)
             if self.sync:

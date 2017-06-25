@@ -16,23 +16,21 @@ from asyncexec.exec import  AsyncExecutor
 '''
 
 async_executor = AsyncExecutor({
+    'process_info': {
+        'workers': 10,
+        'pool': 'process'
+    },
     "rabbitmq": {
-        "host": "172.17.0.2",
-        "port": '',
-        "username": "user",
-        "password": "password"
+        "host": "172.17.0.3",
+        "port": 5672,
+        "username": "guest",
+        "password": "guest"
     }
 })
-import time
-@async_executor.handler('rabbitmq', 'req_queue1', 'res_queue1', multiprocess=True)
-def test_method1(data):
-    return 'result'
 
-'''
-@async_executor.handler('rabbitmq', 'req_queue2', 'res_queue2', multiprocess=False)
-def test_method2(data):
-    print("Bye", data)
-    return str(data) + ': response'
-'''
+import time
+@async_executor.handler('rabbitmq', 'rabbit:in_q', 'rabbit:out_q')
+def test_method(data):
+    return 'result'
 
 async_executor.start()

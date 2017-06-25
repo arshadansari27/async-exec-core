@@ -1,41 +1,73 @@
 import asyncio
+import aiozmq
 import asyncio_redis
 import simplejson as json
 import uvloop
-from .events import Listener, Handler
-from .channels.redis_b import run_redis_listener
-from .channels.rabbitmq import run_rabbitmq_listener
-from .channels.http_handler import  create_http_listener
+from .channels.redis import RedisChannel
+from .channels.rabbitmq import RabbitMQChannel
+# from .channels.http_handler import  create_http_listener
+from .core.commands import CommandRouter
+from collections import defaultdict
 
-async def main(loop, listener, configurations, channel_wise_queues):
-
+async def main(loop, addr, configurations, channel_wise_queues):
+    
+    loop.create_task(CommandRouter.start_server())
     coro_listeners = []
-    for k, v in configurations.items():
-        print ("Checking listeners for ", k, "...", v)
-        host, port, username, password = v
-        if k == 'redis':
-            if 'redis' not in channel_wise_queues:
-                continue
-            print ("Starting ", k, "...")
-            coro_listeners.append(run_redis_listener(loop, listener, host, port, channel_wise_queues['redis']))
-        elif k == 'rabbitmq':
-            if 'rabbitmq' not in channel_wise_queues:
-                continue
-            coro_listeners.append(run_rabbitmq_listener(loop, listener, host, port, username, password, channel_wise_queues['rabbitmq']))
-        elif k == 'http':
-            coro_listeners.append(create_http_listener(loop, listener, port))
-        else:
-            raise Exception("Channel not supported")
+    for channel_name, handler_details in channel_wise_queues.items(): 
+        for in_q, out_q, func in handler_details:
+            if channel_name == 'redis':
+                channel_class = RedisChannel
+            elif channel_name == 'rabbitmq':
+                channel_class = RabbitMQChannel 
+            elif channel_name == 'http':
+                raise Exception("Channel http not supported yet, but is in progress")
+            else:
+                raise Exception("Channel not supported")
+            
+            host, port, username, password = configurations[channel_name]
+
+            await loop.create_task(channel_class.initialize({
+                'host': host,
+                'port': port,
+                'username': username,
+                'password': password
+            }, loop))
+            if out_q:
+                sync = True
+            else:
+                sync = False
+
+            channel_obj = channel_class([addr], func.__name__, in_q, out_q, sync=sync)
+            AsyncExecutor.channels[channel_name].append(channel_obj)
     await asyncio.gather(*coro_listeners)
+    for channel_name, channel_objs in AsyncExecutor.channels.items():
+        print("Staring", channel_name, '...')
+        for idx, channel_obj in enumerate(channel_objs):
+            print('\t', idx)
+            await channel_obj.start()
 
 class AsyncExecutor(object):
 
+    channels  = defaultdict(list)
+
     def __init__(self, configurations):
         workers = 4
-        if 'multiprocess' in configurations:
-            if 'workers' in configurations['multiprocess']:
-                workers = configurations['multiprocess']['workers']
-        self.listener = Listener(workers=workers)
+        self.URI = 'tcp://0.0.0.0:5555'
+        if 'process_info' in configurations:
+            if 'workers' in configurations['process_info']:
+                workers = configurations['process_info']['workers']
+            if 'pool' in configurations['process_info']:
+                if configurations['process_info']['pool'] == 'process':
+                    use_multiprocessing = True
+                else:
+                    use_multiprocessing = False
+            else:
+                use_multiprocessing = True
+
+
+        CommandRouter.initialize(self.URI,
+                                 max_workers=workers,
+                                 use_multiprocessing=use_multiprocessing)
         self.channel_configurations = {}
         self.channel_wise_queues = {}
 
@@ -64,7 +96,7 @@ class AsyncExecutor(object):
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         loop = uvloop.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.create_task(main(loop, self.listener, self.channel_configurations, self.channel_wise_queues))
+        loop.create_task(main(loop, self.URI, self.channel_configurations, self.channel_wise_queues))
         loop.run_forever()
 
     def handler(self, channel, queue_request, queue_response, multiprocess=True):
@@ -74,8 +106,12 @@ class AsyncExecutor(object):
             ))
             if channel not in self.channel_wise_queues:
                 self.channel_wise_queues[channel] = []
-            self.channel_wise_queues[channel].append((queue_request, queue_response, multiprocess))
-            self.listener.register_handler(Handler(queue_request, func))
+            self.channel_wise_queues[channel].append((queue_request, queue_response, func))
+            if queue_response:
+                sync = True
+            else:
+                sync = False
+            func = aiozmq.rpc.method(func)
+            CommandRouter.subscribe(func.__name__, func, sync)
             return func
         return decorator
-

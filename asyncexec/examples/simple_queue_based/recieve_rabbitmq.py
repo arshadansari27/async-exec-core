@@ -27,14 +27,14 @@ def on_message(message: IncomingMessage):
 
 async def main():
     # Perform connection
-    connection = await connect("amqp://user:password@172.17.0.2/", loop=loop)
+    connection = await connect("amqp://guest:guest@172.17.0.3/", loop=loop)
 
     # Creating a channel
     channel = await connection.channel()
     await channel.set_qos(prefetch_count=1)
 
     logs_exchange = await channel.declare_exchange(
-        'res_queue1',
+        'rabbit:out_q',
         ExchangeType.DIRECT
     )
 
