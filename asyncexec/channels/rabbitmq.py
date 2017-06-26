@@ -23,9 +23,9 @@ class RabbitMQChannel:
         self.sync = sync
         self.zmq_channels = []
         for handler_uri in self.handler_uris:
-            self.zmq_channels.append(RabbitMQChannel.channel_type(handler_uri,
-                                                                  handler_key,
-                                                                  sync=self.sync))
+            self.zmq_channels.append(
+                RabbitMQChannel.channel_type(
+                    handler_uri, handler_key, sync=self.sync))
 
     async def start(self):
         cls = self.__class__
