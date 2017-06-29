@@ -53,16 +53,13 @@ class AsyncExecutor(object):
     def __init__(self, configurations):
         workers = 4
         self.URI = 'tcp://0.0.0.0:5555'
+        use_multiprocessing = True
         if 'process_info' in configurations:
             if 'workers' in configurations['process_info']:
                 workers = configurations['process_info']['workers']
             if 'pool' in configurations['process_info']:
-                if configurations['process_info']['pool'] == 'process':
-                    use_multiprocessing = True
-                else:
+                if configurations['process_info']['pool'] != 'process':
                     use_multiprocessing = False
-            else:
-                use_multiprocessing = True
 
 
         CommandRouter.initialize(self.URI,
