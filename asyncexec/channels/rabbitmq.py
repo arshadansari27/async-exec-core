@@ -40,8 +40,9 @@ class RabbitMQChannel:
         in_queue = await in_channel.declare_queue(exclusive=True)
         await in_queue.bind(incoming_exchange, routing_key='async_core')
 
-        out_channel = await cls.connection.channel()
-        self.sending_exchange = await out_channel.declare_exchange(self.out_queue_name, ExchangeType.DIRECT)
+        if self.out_queue_name:
+            out_channel = await cls.connection.channel()
+            self.sending_exchange = await out_channel.declare_exchange(self.out_queue_name, ExchangeType.DIRECT)
         in_queue.consume(self.in_message_handler)
         print("Waiting to consume...")
 
@@ -52,6 +53,8 @@ class RabbitMQChannel:
             self.__class__.loop.create_task(self.zmq_channels[selector].call(message.body))
 
     def write_response(self, result):
+        if not self.out_queue_name:
+            return
         print("Writing Response", result)
         if type(result) == str:
             result = result.encode('utf-8')

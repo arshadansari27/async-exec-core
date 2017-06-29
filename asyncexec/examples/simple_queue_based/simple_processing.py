@@ -20,15 +20,16 @@ async_executor = AsyncExecutor({
         'workers': 10,
         'pool': 'process'
     },
-    "redis": {
-        "host": "172.17.0.3",
-        "port": 6379
+    "rabbitmq": {
+        "host": "172.17.0.2",
+        "port": 5672,
+        "username": "guest",
+        "password": "guest"
     }
-
 })
 
 import time
-@async_executor.handler('redis', 'in_q1', None)
+@async_executor.handler('rabbitmq', 'in_q1', None)
 def test_method1(data):
     print ("Called 1", data)
     return 'result'
