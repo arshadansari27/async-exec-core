@@ -11,7 +11,7 @@ async def main(loop, ip, queue, message):
     # Creating a channel
     channel = await connection.channel()
 
-    logs_exchange = await channel.declare_exchange(queue, ExchangeType.DIRECT)
+    # logs_exchange = await channel.declare_exchange(queue, ExchangeType.TOPIC)
 
     for i in range(1):
 
@@ -22,7 +22,7 @@ async def main(loop, ip, queue, message):
             delivery_mode=DeliveryMode.PERSISTENT
         )
 
-        await logs_exchange.publish(message, routing_key='async_core')
+        await channel.default_exchange.publish(message, routing_key='in_q2')
 
         print(" [x] Sent %r" % message_body)
 

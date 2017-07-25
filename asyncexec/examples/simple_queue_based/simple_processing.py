@@ -29,16 +29,16 @@ async_executor = AsyncExecutor({
 })
 
 import time
+'''
 @async_executor.handler('rabbitmq', 'in_q1', None)
 def test_method1(data):
     print ("Called 1", data)
     return 'result'
 
 '''
-@async_executor.handler('redis', 'in_q2', 'out_q2')
+@async_executor.handler('rabbitmq', 'in_q2', 'out_q2')
 def test_method2(data):
     print ("Called 2", data)
     return 'result'
-'''
 
 async_executor.start()

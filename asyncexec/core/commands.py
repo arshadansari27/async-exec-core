@@ -27,6 +27,7 @@ class CommandRouter:
 
     @classmethod
     def initialize(cls, uri='tcp://127.0.0.1:5555', max_workers=4, use_multiprocessing=False):
+        print("Using URI", uri)
         if use_multiprocessing:
             cls.pool = ProcessPoolExecutor(max_workers=max_workers)
         else:
@@ -49,6 +50,7 @@ class CommandRouter:
             cls.uri = 'tcp://*:*'
         command = await aiozmq.rpc.serve_rpc(cls.handlers, bind=cls.uri)
         cls.command_addr = list(command.transport.bindings())[0]
+        print("*****", cls.command_addr)
         cls.command = command
 
     @classmethod

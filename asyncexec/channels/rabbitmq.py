@@ -36,15 +36,13 @@ class RabbitMQChannel:
 
         in_channel = await cls.connection.channel()
         await in_channel.set_qos(prefetch_count=1)
-        incoming_exchange = await in_channel.declare_exchange(self.in_queue_name, ExchangeType.DIRECT)
-        in_queue = await in_channel.declare_queue(exclusive=True)
-        await in_queue.bind(incoming_exchange, routing_key='async_core')
+        in_queue = await in_channel.declare_queue(self.in_queue_name, durable=True)
 
         if self.out_queue_name:
-            out_channel = await cls.connection.channel()
-            self.sending_exchange = await out_channel.declare_exchange(self.out_queue_name, ExchangeType.DIRECT)
-        in_queue.consume(self.in_message_handler)
+            self.out_channel = await cls.connection.channel()
+
         print("Waiting to consume...")
+        in_queue.consume(self.in_message_handler)
 
     def in_message_handler(self, message):
         print("In message_handler")
@@ -60,7 +58,7 @@ class RabbitMQChannel:
             result = result.encode('utf-8')
 
         message = Message(result, delivery_mode=DeliveryMode.PERSISTENT)
-        self.__class__.loop.create_task(self.sending_exchange.publish(message, routing_key='async_core'))
+        self.__class__.loop.create_task(self.out_channel.default_exchange.publish(message, routing_key=self.out_queue_name))
 
     @classmethod
     async def initialize(cls, config, loop):

@@ -22,7 +22,6 @@ def on_message(message: IncomingMessage):
         diff = (3600 * 24) * dd + ds 
         message_count += 1.
 
-        
         print("[x] %r" % message.body, message_count / diff if diff > 0 else message_count)
 
 
@@ -34,16 +33,10 @@ async def main(ip, queue):
     channel = await connection.channel()
     await channel.set_qos(prefetch_count=1)
 
-    logs_exchange = await channel.declare_exchange(
-        queue,
-        ExchangeType.DIRECT
-    )
-
     # Declaring queue
-    queue = await channel.declare_queue(exclusive=True)
+    queue = await channel.declare_queue(queue, durable=True)
 
     # Binding the queue to the exchange
-    await queue.bind(logs_exchange, routing_key='async_core')
 
     # Start listening the queue with name 'task_queue'
     queue.consume(on_message)

@@ -12,6 +12,7 @@ class Channel(object):
         self.sync = sync
 
     async def initialize(self):
+        print("Channel to zmq server address", self.__class__.__name__, self.uri)
         self.client = await aiozmq.rpc.connect_rpc(connect=self.uri)
 
     async def call(self, *kargs, **kwargs):

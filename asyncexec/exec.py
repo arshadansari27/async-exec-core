@@ -9,21 +9,21 @@ from .channels.rabbitmq import RabbitMQChannel
 from .core.commands import CommandRouter
 from collections import defaultdict
 
-async def main(loop, addr, configurations, channel_wise_queues):
-    
+async def main(loop, configurations, channel_wise_queues):
+
     loop.create_task(CommandRouter.start_server())
     coro_listeners = []
-    for channel_name, handler_details in channel_wise_queues.items(): 
+    for channel_name, handler_details in channel_wise_queues.items():
         for in_q, out_q, func in handler_details:
             if channel_name == 'redis':
                 channel_class = RedisChannel
             elif channel_name == 'rabbitmq':
-                channel_class = RabbitMQChannel 
+                channel_class = RabbitMQChannel
             elif channel_name == 'http':
                 raise Exception("Channel http not supported yet, but is in progress")
             else:
                 raise Exception("Channel not supported")
-            
+
             host, port, username, password = configurations[channel_name]
 
             await loop.create_task(channel_class.initialize({
@@ -37,7 +37,7 @@ async def main(loop, addr, configurations, channel_wise_queues):
             else:
                 sync = False
 
-            channel_obj = channel_class([addr], func.__name__, in_q, out_q, sync=sync)
+            channel_obj = channel_class([CommandRouter.command_addr], func.__name__, in_q, out_q, sync=sync)
             AsyncExecutor.channels[channel_name].append(channel_obj)
     await asyncio.gather(*coro_listeners)
     for channel_name, channel_objs in AsyncExecutor.channels.items():
@@ -52,7 +52,7 @@ class AsyncExecutor(object):
 
     def __init__(self, configurations):
         workers = 4
-        self.URI = 'tcp://0.0.0.0:5555'
+        self.URI = None # 'tcp://0.0.0.0:5555'
         use_multiprocessing = True
         if 'process_info' in configurations:
             if 'workers' in configurations['process_info']:
@@ -60,7 +60,6 @@ class AsyncExecutor(object):
             if 'pool' in configurations['process_info']:
                 if configurations['process_info']['pool'] != 'process':
                     use_multiprocessing = False
-
 
         CommandRouter.initialize(self.URI,
                                  max_workers=workers,
@@ -93,7 +92,7 @@ class AsyncExecutor(object):
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         loop = uvloop.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.create_task(main(loop, self.URI, self.channel_configurations, self.channel_wise_queues))
+        loop.create_task(main(loop, self.channel_configurations, self.channel_wise_queues))
         loop.run_forever()
 
     def handler(self, channel, queue_request, queue_response, multiprocess=True):
