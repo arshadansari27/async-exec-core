@@ -85,16 +85,13 @@ Machine details:
 
 
 
-
-
-
-
-ROAD MAP (upcoming):
---------------------
-    * ZMQ support
-    * Kafka support
+Used by
+-------
+* [Stockopedia](http://assets.stockopedia.com/redesign/logo.png)
 
 
 Contribution and Other information:
 -----------------------------------
 Please check the wiki pages for more information and about how to contribute.
+
+
