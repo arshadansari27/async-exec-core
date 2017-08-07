@@ -87,7 +87,7 @@ Machine details:
 
 Used by
 -------
-* [Stockopedia](http://assets.stockopedia.com/redesign/logo.png)
+* [Stockopedia](www.stockopedia.com) ![Stockopedia](http://assets.stockopedia.com/redesign/logo.png)
 
 
 Contribution and Other information:
