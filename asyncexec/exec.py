@@ -6,8 +6,6 @@ from asyncexec.workers.flow_builder import Flow
 
 class AsyncExecutor(object):
 
-    channels  = defaultdict(list)
-
     def __init__(self, configurations):
         self.channel_configurations = {}
         self.flows = []
@@ -41,6 +39,56 @@ class AsyncExecutor(object):
         for flow in self.flows:
             flow.start(external_loop_start=True)
         self.loop.run_forever()
+
+    def publisher(self, out_channel, out_queue):
+        def decorator(func):
+            print ("Registering handler {} for channel: {} on queues ({})".format(
+                func.__name__, out_channel, out_queue))
+            assert out_channel in self.channel_configurations
+            host, port, username, password = self.channel_configurations[out_channel]
+            config = {
+                'max_workers': None,
+                'middlewares': {
+                    out_channel: {
+                        'host': host,
+                        'port': port,
+                        'username': username,
+                        'password': password
+                    }
+                }
+            }
+            flow = Flow(config, loop=self.loop) \
+                .add_generator(func) \
+                .add_publisher(out_channel, out_queue)
+            self.flows.append(flow)
+
+            return func
+        return decorator
+
+    def listener(self, in_channel, in_queue, max_workers=4):
+        def decorator(func):
+            print ("Registering handler {} for channel: {} on queues ({})".format(
+                func.__name__, in_channel, in_queue))
+            assert in_channel in self.channel_configurations
+            host, port, username, password = self.channel_configurations[in_channel]
+            config = {
+                'max_workers': max_workers,
+                'middlewares': {
+                    in_channel: {
+                        'host': host,
+                        'port': port,
+                        'username': username,
+                        'password': password
+                    }
+                }
+            }
+            flow = Flow(config, loop=self.loop)\
+                .add_listener(in_channel, in_queue)\
+                .add_sink(func)
+            self.flows.append(flow)
+
+            return func
+        return decorator
 
     def handler(self, channel, queue_request, queue_response, max_workers=4):
         def decorator(func):
