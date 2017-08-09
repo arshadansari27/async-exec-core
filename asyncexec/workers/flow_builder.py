@@ -23,6 +23,12 @@ def shutdown():
     for task in asyncio.Task.all_tasks():
         task.cancel()
 
+def shutdown_handler(pool):
+    def on_shutdown():
+        pool.shutdown()
+        shutdown()
+    return on_shutdown
+
 
 class Flow(object):
 
@@ -34,9 +40,9 @@ class Flow(object):
             self.loop = asyncio.get_event_loop()
         else:
             self.loop = loop
-        self.loop.add_signal_handler(signal.SIGHUP, shutdown)
-        self.loop.add_signal_handler(signal.SIGTERM, shutdown)
-        self.loop.add_signal_handler(signal.SIG_IGN, shutdown)
+        self.loop.add_signal_handler(signal.SIGHUP, shutdown_handler(self.pool))
+        self.loop.add_signal_handler(signal.SIGTERM, shutdown_handler(self.pool))
+        self.loop.add_signal_handler(signal.SIG_IGN, shutdown_handler(self.pool))
         self.middleware_config = config.get('middlewares', {})
         self.coroutines = []
         self.previous_communicator = None
@@ -93,17 +99,18 @@ class Flow(object):
         self.coroutines.append(in_out_worker)
         return self
 
-    def start(self, timeout=None):
+    def start(self, timeout=None, external_loop_start=False):
         self.futures = []
         for coroutine in self.coroutines:
             self.futures.append(self.loop.create_task(coroutine.start()))
-        if not timeout:
-            self.loop.run_forever()
-        else:
-            async def stopper():
-                await asyncio.sleep(timeout)
-                shutdown()
-            self.loop.run_until_complete(stopper())
+        if not external_loop_start:
+            if not timeout:
+                self.loop.run_forever()
+            else:
+                async def stopper():
+                    await asyncio.sleep(timeout)
+                    shutdown()
+                self.loop.run_until_complete(stopper())
 
     def stop(self):
         self.pool.shutdown()

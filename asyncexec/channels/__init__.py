@@ -1,23 +1,24 @@
-class Listener(object):
+class External(object):
+     def __init__(self, loop, configurations, queue_name):
+        self.loop = loop
+        self.host = configurations['host']
+        self.port = configurations['port']
+        self.username = configurations.get('username', None)
+        self.password = configurations.get('password', None)
+        self.queue_name = queue_name
+
+
+class Listener(External):
 
     def __init__(self, loop, configurations, queue_name, consumer):
-        self.loop = loop
-        self.host = configurations['host']
-        self.port = configurations['port']
-        self.username = configurations.get('username', None)
-        self.password = configurations.get('password', None)
-        self.queue_name = queue_name
+        super(Listener, self).__init__(loop, configurations, queue_name)
         self.consumer = consumer
 
-class Publisher(object):
+
+class Publisher(External):
 
     def __init__(self, loop, configurations, queue_name, publisher):
-        self.loop = loop
-        self.host = configurations['host']
-        self.port = configurations['port']
-        self.username = configurations.get('username', None)
-        self.password = configurations.get('password', None)
-        self.queue_name = queue_name
+        super(Publisher, self).__init__(loop, configurations, queue_name)
         self.publisher = publisher
 
 

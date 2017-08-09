@@ -3,13 +3,11 @@ from datetime import datetime
 from aiohttp import web
 import random
 import simplejson as json
-from asyncexec.core.channels import Channel
 
 
 class HTTPChannel:
 
     initialized = False
-    channel_type = Channel
 
     def __init__(self, handler_uris, handler_key):
         self.handler_uris = handler_uris
