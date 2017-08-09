@@ -9,7 +9,7 @@ from aio_pika import connect, Message, DeliveryMode, ExchangeType
 class TestRabbitMQChannel(unittest.TestCase):
 
     def setUp(self):
-        host = '172.17.0.3'
+        host = '172.17.0.2'
         port =  5672
         username =  ''
         password =  ''

@@ -6,6 +6,7 @@ from asyncexec.workers.sink_worker import SinkWorker
 from asyncexec.workers import Communicator
 from asyncexec.channels import PublisherFactory, ListenerFactory
 from concurrent.futures import ProcessPoolExecutor
+import signal
 
 
 def worker_factory(type='inout'):
@@ -92,13 +93,22 @@ class Flow(object):
         self.coroutines.append(in_out_worker)
         return self
 
-    def start(self):
-        futures = []
+    def start(self, timeout=None):
+        self.futures = []
         for coroutine in self.coroutines:
-            futures.append(loop.create_task(coroutine.start()))
-        async def wait_on_all(futures):
-            await asyncio.gather(*futures)
-        loop.run_until_complete(wait_on_all(futures))
+            self.futures.append(self.loop.create_task(coroutine.start()))
+        if not timeout:
+            self.loop.run_forever()
+        else:
+            async def stopper():
+                await asyncio.sleep(timeout)
+                shutdown()
+            self.loop.run_until_complete(stopper())
+
+    def stop(self):
+        self.pool.shutdown()
+        shutdown()
+
 
 if __name__ == '__main__':
     print("Starting")

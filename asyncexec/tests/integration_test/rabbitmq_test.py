@@ -17,7 +17,7 @@ class TestRabbitMQChannel(unittest.TestCase):
 
     def setUp(self):
         global _handler
-        host = '172.17.0.3'
+        host = '172.17.0.2'
         port = 5672
         username =  ''
         password =  ''

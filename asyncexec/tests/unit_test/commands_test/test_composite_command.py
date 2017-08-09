@@ -4,9 +4,9 @@ import os
 import unittest
 import sys
 sys.path.insert(0, os.getcwd())
-from commands import Command
-from commands.unit import UnitCommand
-from commands.composite import SequentialCommandGroup, ParallelCommandGroup
+from asyncexec.commands import Command
+from asyncexec.commands.unit import UnitCommand
+from asyncexec.commands.composite import SequentialCommandGroup, ParallelCommandGroup
 
 def method_to_run(x):
     return x * 2

@@ -4,13 +4,10 @@ import os
 import unittest
 import sys
 sys.path.insert(0, os.getcwd())
-from commands.unit import UnitCommand
+from asyncexec.commands.unit import UnitCommand
 
 
 class TestTemplate(object):
-
-    def __init__(self):
-        pass
 
     def execute(self, context, params):
         return math.sqrt(context['x'])

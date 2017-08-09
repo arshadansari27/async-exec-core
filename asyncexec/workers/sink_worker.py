@@ -10,6 +10,12 @@ class SinkWorker(object):
         self.publisher = publisher
 
     async def start(self):
+        count = 0
         while True:
-            data = await self.publisher.publish()
-            await self.client.call.handler(data)
+            try:
+                count += 1
+                data = await self.publisher.publish()
+                await self.client.call.handler(data)
+            except Exception as e:
+                print('Error occured', e)
+                raise
