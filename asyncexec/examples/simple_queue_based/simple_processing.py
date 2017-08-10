@@ -41,4 +41,13 @@ def test_method2(data):
     print ("Called 2", data)
     return 'result'
 
+@async_executor.publisher('redis', 'tseing')
+def test_method3():
+    for i in range(10):
+        yield i
+
+@async_executor.listener('redis', 'tseing')
+def test_method4(data):
+    print('I received', data)
+
 async_executor.start()

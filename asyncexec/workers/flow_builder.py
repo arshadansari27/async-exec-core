@@ -47,6 +47,15 @@ class Flow(object):
         self.coroutines = []
         self.previous_communicator = None
 
+    def add_http_listener(self, endpoint):
+        from asyncexec.channels.http_c import HTTPListener
+        assert 'http' in self.middleware_config
+        communicator = Communicator()
+        http_listener = HTTPListener(self.loop, self.middleware_config['http'], endpoint, communicator)
+        self.coroutines.append(http_listener)
+        self.previous_communicator = communicator
+        return self
+
     def add_listener(self, tech, queue):
         assert self.middleware_config.get(tech) is not None
         communicator = Communicator()
@@ -148,15 +157,23 @@ if __name__ == '__main__':
                 'port': 5672,
                 'username': 'guest',
                 'password': 'guest'
+            },
+            'http': {
+                'host': '0.0.0.0',
+                'port': 5555,
+                'username': 'guest',
+                'password': 'guest'
             }
         },
         'max_workers': 4
     }
 
-
+    '''
     Flow(config, loop=loop)\
         .add_generator(gen)\
         .add_worker(fun)\
         .add_publisher('rabbitmq', 'testing')\
         .add_listener('rabbitmq', 'testing')\
         .add_sink(con).start()
+    '''
+    Flow(config, loop=loop).add_http_listener('/testing').add_sink(con).add_http_listener('/testing2').add_sink(con).start()
