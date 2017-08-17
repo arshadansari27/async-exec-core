@@ -43,9 +43,16 @@ class Flow(object):
         self.loop.add_signal_handler(signal.SIGHUP, shutdown_handler(self.pool))
         self.loop.add_signal_handler(signal.SIGTERM, shutdown_handler(self.pool))
         self.loop.add_signal_handler(signal.SIG_IGN, shutdown_handler(self.pool))
+        self.loop.set_exception_handler(self.exception_handler)
         self.middleware_config = config.get('middlewares', {})
         self.coroutines = []
         self.previous_communicator = None
+        self.terminate_event = asyncio.Event()
+
+    def exception_handler(self, loop, context):
+        print("[*] Handling exception here", context)
+        loop.close()
+        self.pool.shutdown()
 
     def add_http_listener(self, endpoint):
         from asyncexec.channels.http_c import HTTPListener
@@ -64,6 +71,7 @@ class Flow(object):
             queue,
             communicator
         )
+        listener.set_termination_event(self.terminate_event)
         self.coroutines.append(listener)
         self.previous_communicator = communicator
         return self
@@ -76,6 +84,7 @@ class Flow(object):
             tech, self.loop, self.middleware_config.get(tech),
             queue, self.previous_communicator
         )
+        publisher.set_termination_event(self.terminate_event)
         self.coroutines.append(publisher)
         self.previous_communicator = None
         return self
@@ -83,7 +92,7 @@ class Flow(object):
     def add_generator(self, func):
         self.previous_communicator = Communicator()
         generator_worker = GeneratorWorker(
-            self.loop, self.pool, func, self.previous_communicator
+            self.loop, self.pool, func, self.previous_communicator, event=self.terminate_event
         )
         self.coroutines.append(generator_worker)
         return self
@@ -94,6 +103,7 @@ class Flow(object):
         sink_worker = SinkWorker(
             self.loop, self.pool, func, self.previous_communicator
         )
+        sink_worker.set_termination_event(self.terminate_event)
         self.coroutines.append(sink_worker)
         return self
 
@@ -104,11 +114,23 @@ class Flow(object):
         in_out_worker = InOutWorker(
             self.loop, self.pool, func, self.previous_communicator, next_communicator
         )
+        in_out_worker.set_termination_event(self.terminate_event)
         self.previous_communicator = next_communicator
         self.coroutines.append(in_out_worker)
         return self
 
     def start(self, timeout=None, external_loop_start=False):
+
+        async def stopper():
+            await asyncio.sleep(timeout)
+            shutdown()
+
+        async def check_event_to_stop():
+            while True:
+                await asyncio.sleep(3)
+                if self.terminate_event.is_set and self.terminate_event.data == 'TERMINATE':
+                    shutdown()
+
         self.futures = []
         for coroutine in self.coroutines:
             self.futures.append(self.loop.create_task(coroutine.start()))
@@ -116,10 +138,10 @@ class Flow(object):
             if not timeout:
                 self.loop.run_forever()
             else:
-                async def stopper():
-                    await asyncio.sleep(timeout)
-                    shutdown()
                 self.loop.run_until_complete(stopper())
+        else:
+            self.loop.create_task(check_event_to_stop())
+
 
     def stop(self):
         self.pool.shutdown()

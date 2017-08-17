@@ -14,12 +14,21 @@ class RabbitMQListener(Listener):
             await self.consumer.consume(message.body)
 
     async def start(self):
-        con_uri = "amqp://" + self.username + ":" + self.password + "@" + self.host + ":" + str(self.port) + "/"
-        connection = await connect(con_uri, loop=self.loop)
-        in_channel = await connection.channel()
-        # await in_channel.set_qos(prefetch_count=1)
-        in_queue = await in_channel.declare_queue(self.queue_name, durable=True)
-        in_queue.consume(self.in_message_handler)
+        try:
+            con_uri = "amqp://" + self.username + ":" + self.password + "@" + self.host + ":" + str(self.port) + "/"
+            connection = await connect(con_uri, loop=self.loop)
+            in_channel = await connection.channel()
+            # await in_channel.set_qos(prefetch_count=1)
+            in_queue = await in_channel.declare_queue(self.queue_name, durable=True)
+            in_queue.consume(self.in_message_handler)
+        except:
+            self.event.data = 'TERMINATE'
+            self.event.set()
+            self.loop.stop()
+            raise
+        finally:
+            if connection:
+                connection.close()
 
 
 class RabbitMQPublisher(Publisher):
@@ -30,15 +39,19 @@ class RabbitMQPublisher(Publisher):
     async def start(self):
         if not self.username or not self.password:
             raise Exception("RabbitMQ Connection requires credentials")
-        con_uri = "amqp://" + self.username + ":" + self.password + "@" + self.host + ":" + str(self.port) + "/"
-        connection = await connect(con_uri, loop=self.loop)
-        out_channel = await connection.channel()
+        connection = None
         try:
+            con_uri = "amqp://" + self.username + ":" + self.password + "@" + self.host + ":" + str(self.port) + "/"
+            connection = await connect(con_uri, loop=self.loop)
+            out_channel = await connection.channel()
             while True:
                 message = await self.publisher.publish()
                 message_body = Message(str(message).encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
                 await out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
         except:
+            self.event.data = 'TERMINATE'
+            self.event.set()
+            self.loop.stop()
             raise
         finally:
             if connection:

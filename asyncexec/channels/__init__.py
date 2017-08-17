@@ -1,11 +1,17 @@
 class External(object):
-     def __init__(self, loop, configurations, queue_name):
+    def __init__(self, loop, configurations, queue_name):
         self.loop = loop
         self.host = configurations['host']
         self.port = configurations['port']
         self.username = configurations.get('username', None)
         self.password = configurations.get('password', None)
         self.queue_name = queue_name
+        self.event = None
+
+    def check_if_ok(self):
+        if self.event and self.event.is_set() and self.event.data == 'TERMINATE':
+            return False
+        return True
 
 
 class Listener(External):
@@ -14,12 +20,18 @@ class Listener(External):
         super(Listener, self).__init__(loop, configurations, queue_name)
         self.consumer = consumer
 
+    def set_termination_event(self, event):
+        self.event = event
+
 
 class Publisher(External):
 
     def __init__(self, loop, configurations, queue_name, publisher):
         super(Publisher, self).__init__(loop, configurations, queue_name)
         self.publisher = publisher
+
+    def set_termination_event(self, event):
+        self.event = event
 
 
 class ListenerFactory(object):

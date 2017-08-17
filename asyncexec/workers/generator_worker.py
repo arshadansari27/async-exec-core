@@ -1,38 +1,64 @@
+import asyncio
 import aioprocessing
-from . import Actor
+from uuid import uuid4
+
+TERMINATOR = 'TERM:' + str(uuid4())
 
 
 class GeneratorWorker(object):
 
-    TERMINATOR = '999999999999999999999999999999999999999999999999999999999999999'
+    @staticmethod
+    def func_run(loop, queue, lock, event, func):
 
-    def func_run(self, queue, lock, func):
         with lock:
             for data in func():
+                if not loop.is_running():
+                    break
+                print("Putting", data)
                 queue.put(data)
-        queue.put(GeneratorWorker.TERMINATOR)
-        queue.close()
+            print("Setting event to terminate")
+            event.set()
+        # queue.put(TERMINATOR)
 
-    def __init__(self, loop, pool, func, consumer):
+    def __init__(self, loop, pool, func, consumer, event=None):
+        self.event = event if event else asyncio.Event()
         self.pool = pool
         self.func = func
         self.queue = aioprocessing.AioQueue()
         self.lock = aioprocessing.AioLock()
-        # self.event = aioprocessing.AioEvent()
+        self._event = aioprocessing.AioEvent()
         self.consumer = consumer
         self.loop = loop
-        self.process = aioprocessing.AioProcess(target=self.func_run, args=(
+        self.process = aioprocessing.AioProcess(target=GeneratorWorker.func_run, args=(
+            self.loop,
             self.queue,
             self.lock,
+            self._event,
             self.func))
 
     async def start(self):
-        self.process.start()
-        while True:
-            data = await self.queue.coro_get()
-            if not data:
-                continue
-            if data == GeneratorWorker.TERMINATOR:
-                break
-            await self.consumer.consume(data)
-        await self.process.coro_join()
+        try:
+            self.process.start()
+            retries = 0
+            while True:
+                try:
+                    data = await self.queue.coro_get(timeout=1)
+                    print("Taking", data)
+                except Exception as e:
+                    retries += 1
+                    print('Managing error', e, 'retry', retries)
+                    await asyncio.sleep(retries)
+                    if retries < 3:
+                        continue
+
+                if retries >= 3 and self._event and self._event.is_set():
+                    self.event.data = 'TERMINATE'
+                    self.event.set()
+                    self.queue.close()
+                    break
+                await self.consumer.consume(data)
+                retries = 0
+            await self.process.coro_join()
+        except Exception as e:
+            print('[*] Error in generator', e)
+            raise

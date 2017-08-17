@@ -15,6 +15,8 @@ class RedisListener(Listener):
                     _, message = await conn_pool.blpop(self.queue_name)
                     await self.consumer.consume(message)
         except:
+            self.event.data = 'TERMINATE'
+            self.event.set()
             raise
         finally:
             if conn_pool:
@@ -33,6 +35,8 @@ class RedisPublisher(Publisher):
                 message = await self.publisher.publish()
                 _ = await conn_pool.lpush(self.queue_name, message)
         except:
+            self.event.data = 'TERMINATE'
+            self.event.set()
             raise
         finally:
             if conn_pool:
