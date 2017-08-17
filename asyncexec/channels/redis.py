@@ -4,19 +4,22 @@ from asyncexec.channels import Listener, Publisher
 
 class RedisListener(Listener):
 
-    def __init__(self, loop, configurations, queue_name, consumer):
-        super(RedisListener, self).__init__(loop, configurations, queue_name, consumer)
+    def __init__(self, loop, configurations, queue_name, consumer, start_event, terminate_event):
+        super(RedisListener, self).__init__(loop, configurations, queue_name, consumer, start_event, terminate_event)
 
     async def start(self):
-        conn_pool = await aioredis.create_redis((self.host, self.port))
+        conn_pool = None
         try:
+            conn_pool = await aioredis.create_redis((self.host, self.port))
+            await self.start_event.wait()
+            if self.terminate_event.is_set():
+                raise Exception("REDIS Listener: Termination event occurred before starting...")
             while True:
                 while await conn_pool.llen(self.queue_name) > 0:
                     _, message = await conn_pool.blpop(self.queue_name)
                     await self.consumer.consume(message)
-        except:
-            self.event.data = 'TERMINATE'
-            self.event.set()
+        except Exception as e:
+            self.error_handler(e)
             raise
         finally:
             if conn_pool:
@@ -25,18 +28,22 @@ class RedisListener(Listener):
 
 class RedisPublisher(Publisher):
 
-    def __init__(self, loop, configurations, queue_name, publisher):
-        super(RedisPublisher, self).__init__(loop, configurations, queue_name, publisher)
+    def __init__(self, loop, configurations, queue_name, publisher, ready_event, terminate_event):
+        super(RedisPublisher, self).__init__(loop, configurations, queue_name, publisher, ready_event, terminate_event)
 
     async def start(self):
-        conn_pool = await aioredis.create_redis((self.host, self.port))
+        conn_pool = None
         try:
+            conn_pool = await aioredis.create_redis((self.host, self.port))
+            self.ready_event.data = 'RedisPublisher'
+            self.ready_event.set()
             while True:
+                if  self.publisher.empty() and self.terminate_event.is_set():
+                    break
                 message = await self.publisher.publish()
                 _ = await conn_pool.lpush(self.queue_name, message)
-        except:
-            self.event.data = 'TERMINATE'
-            self.event.set()
+        except Exception as e:
+            self.error_handler(e)
             raise
         finally:
             if conn_pool:

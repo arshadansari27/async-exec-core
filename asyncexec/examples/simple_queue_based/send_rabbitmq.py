@@ -15,14 +15,14 @@ async def main(loop, ip, queue, message):
 
     for i in range(1):
 
-        message_body = json.dumps({'pi': '1049261'}).encode('utf-8')
+        message_body = message.encode('utf-8')
 
         message = Message(
             message_body,
             delivery_mode=DeliveryMode.PERSISTENT
         )
 
-        await channel.default_exchange.publish(message, routing_key='in_q2')
+        await channel.default_exchange.publish(message, routing_key=queue)
 
         print(" [x] Sent %r" % message_body)
 

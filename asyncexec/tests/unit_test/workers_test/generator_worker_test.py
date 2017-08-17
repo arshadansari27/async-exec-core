@@ -20,8 +20,13 @@ class TestGeneratorWorker(unittest.TestCase):
         self.consumer.consume = AsyncMock(return_value=None)
 
     def test_generation(self):
+        start_event = asyncio.Event()
+        async def start():
+            await asyncio.sleep(1)
+            start_event.set()
         generator_worker = GeneratorWorker(
-            self.loop, None, self.gen_func, self.consumer)
+            self.loop, None, self.gen_func, self.consumer, start_event, asyncio.Event())
+        self.loop.create_task(start())
         self.loop.run_until_complete(generator_worker.start())
         self.consumer.consume.assert_called_with(9)
 

@@ -29,11 +29,18 @@ async_executor = AsyncExecutor({
 })
 
 import time
-'''
-@async_executor.handler('rabbitmq', 'in_q1', None)
+
+
+
+@async_executor.handler('redis', 'in_q1', 'out_q2')
 def test_method1(data):
     print ("Called 1", data)
     return 'result'
+
+@async_executor.publisher('rabbitmq', 'out_q2')
+def test_rabbit_gen():
+    for i in range(10):
+        yield i
 
 '''
 @async_executor.handler('redis', 'in_q2', 'out_q2')
@@ -50,4 +57,6 @@ def test_method3():
 def test_method4(data):
     print('I received', data)
 
+'''
 async_executor.start()
+

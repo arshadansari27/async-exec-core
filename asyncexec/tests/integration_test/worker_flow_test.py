@@ -50,7 +50,7 @@ class TestFlow(unittest.TestCase):
             .add_publisher('rabbitmq', 'testing')\
             .add_listener('rabbitmq', 'testing')\
             .add_sink(con)
-        flow.start(timeout=3)
+        flow.start()
 
     def tearDown(self):
         pass

@@ -6,6 +6,8 @@ from asyncexec.workers.sink_worker import SinkWorker
 from asyncexec.workers import Communicator
 from asyncexec.channels import PublisherFactory, ListenerFactory
 from concurrent.futures import ProcessPoolExecutor
+from uuid import uuid4
+from collections import defaultdict
 import signal
 
 
@@ -18,10 +20,17 @@ def worker_factory(type='inout'):
         return InOutWorker
 
 
+
 def shutdown():
     """Performs a clean shutdown"""
-    for task in asyncio.Task.all_tasks():
-        task.cancel()
+    while True:
+        import time
+        for task in asyncio.Task.all_tasks():
+            if task.done():
+                continue
+            print('Task Pending', task)
+        time.sleep(1)
+
 
 def shutdown_handler(pool):
     def on_shutdown():
@@ -47,7 +56,12 @@ class Flow(object):
         self.middleware_config = config.get('middlewares', {})
         self.coroutines = []
         self.previous_communicator = None
-        self.terminate_event = asyncio.Event()
+        self.terminate_event = None # asyncio.Event()
+        self.terminate_events = []
+        self.start_event = None # asyncio.Event()
+        self.start_event_name = None
+        self.start_events = {}
+        self.ready_events = defaultdict(list)
 
     def exception_handler(self, loop, context):
         print("[*] Handling exception here", context)
@@ -55,6 +69,11 @@ class Flow(object):
         self.pool.shutdown()
 
     def add_http_listener(self, endpoint):
+        self.start_event = asyncio.Event()
+        self.terminate_event = asyncio.Event()
+        self.start_event_name = str(uuid4())
+        self.start_events[self.start_event_name] = self.start_event
+        self.terminate_events.append(self.terminate_event)
         from asyncexec.channels.http_c import HTTPListener
         assert 'http' in self.middleware_config
         communicator = Communicator()
@@ -65,13 +84,19 @@ class Flow(object):
 
     def add_listener(self, tech, queue):
         assert self.middleware_config.get(tech) is not None
+        self.start_event = asyncio.Event()
+        self.terminate_event = asyncio.Event()
+        self.start_event_name = str(uuid4())
+        self.start_events[self.start_event_name] = self.start_event
+        self.terminate_events.append(self.terminate_event)
         communicator = Communicator()
         listener = ListenerFactory.instantiate(
             tech, self.loop, self.middleware_config.get(tech),
             queue,
-            communicator
+            communicator,
+            self.start_event,
+            self.terminate_event
         )
-        listener.set_termination_event(self.terminate_event)
         self.coroutines.append(listener)
         self.previous_communicator = communicator
         return self
@@ -80,19 +105,28 @@ class Flow(object):
         assert self.middleware_config.get(tech) is not None
         if self.previous_communicator is None:
             raise Exception("Cannot add a publisher to middleware without anything to publish from")
+        ready_event = asyncio.Event()
+
         publisher = PublisherFactory.instantiate(
             tech, self.loop, self.middleware_config.get(tech),
-            queue, self.previous_communicator
+            queue, self.previous_communicator, ready_event, self.terminate_event
         )
-        publisher.set_termination_event(self.terminate_event)
+        self.ready_events[self.start_event_name].append(ready_event)
         self.coroutines.append(publisher)
         self.previous_communicator = None
         return self
 
     def add_generator(self, func):
+        self.start_event = asyncio.Event()
+        self.start_event_name = str(uuid4())
+        self.start_events[self.start_event_name] = self.start_event
+        self.terminate_event = asyncio.Event()
+        self.terminate_events.append(self.terminate_event)
+
         self.previous_communicator = Communicator()
         generator_worker = GeneratorWorker(
-            self.loop, self.pool, func, self.previous_communicator, event=self.terminate_event
+            self.loop, self.pool, func, self.previous_communicator,
+            self.start_event, self.terminate_event
         )
         self.coroutines.append(generator_worker)
         return self
@@ -100,10 +134,11 @@ class Flow(object):
     def add_sink(self, func):
         if self.previous_communicator is None or len(self.coroutines) is 0:
             raise Exception("Cannot add a sink worker without anything to listen from")
+        ready_event = asyncio.Event()
         sink_worker = SinkWorker(
-            self.loop, self.pool, func, self.previous_communicator
+            self.loop, self.pool, func, self.previous_communicator, ready_event, self.terminate_event
         )
-        sink_worker.set_termination_event(self.terminate_event)
+        self.ready_events[self.start_event_name].append(ready_event)
         self.coroutines.append(sink_worker)
         return self
 
@@ -111,37 +146,56 @@ class Flow(object):
         if self.previous_communicator is None or len(self.coroutines) is 0:
             raise Exception("Cannot add a worker without anything to listen from")
         next_communicator = Communicator()
+        ready_event = asyncio.Event()
         in_out_worker = InOutWorker(
-            self.loop, self.pool, func, self.previous_communicator, next_communicator
+            self.loop, self.pool, func, self.previous_communicator, next_communicator,
+            ready_event, self.terminate_event
         )
-        in_out_worker.set_termination_event(self.terminate_event)
+        self.ready_events[self.start_event_name].append(ready_event)
         self.previous_communicator = next_communicator
         self.coroutines.append(in_out_worker)
         return self
 
-    def start(self, timeout=None, external_loop_start=False):
-
-        async def stopper():
-            await asyncio.sleep(timeout)
-            shutdown()
-
-        async def check_event_to_stop():
-            while True:
-                await asyncio.sleep(3)
-                if self.terminate_event.is_set and self.terminate_event.data == 'TERMINATE':
-                    shutdown()
-
+    def start(self):
         self.futures = []
         for coroutine in self.coroutines:
             self.futures.append(self.loop.create_task(coroutine.start()))
-        if not external_loop_start:
-            if not timeout:
-                self.loop.run_forever()
-            else:
-                self.loop.run_until_complete(stopper())
-        else:
-            self.loop.create_task(check_event_to_stop())
+        self.loop.run_until_complete(self.start_on_all_ready())
+        return self.loop.create_task(self.run_till_termination())
 
+    async def run_till_termination(self):
+        while True:
+            if all(terminate_event.is_set() for terminate_event in self.terminate_events):
+                break
+            await asyncio.sleep(1)
+        # shutdown_handler(self.pool)()
+        tasks = [task for task in asyncio.Task.all_tasks() if task.done() != True]
+        while len(tasks) > 1:
+            await asyncio.sleep(1)
+            tasks = [task for task in asyncio.Task.all_tasks() if task.done() != True]
+        self.pool.shutdown()
+        print("Shutting down")
+
+    async def start_on_all_ready(self):
+        event_data = [(n, ev) for n, events in self.ready_events.items() for ev in events]
+        done = set([])
+        while len(event_data) > 0:
+            print(len(event_data))
+            indexes = []
+            for i in range(len(event_data)):
+                start_event_name, event = event_data[i]
+                if event.is_set() and 'ERROR:' in event.data:
+                    raise Exception(event.data)
+                elif not event.is_set():
+                    await asyncio.sleep(1)
+                else:
+                    done.add(start_event_name)
+                    indexes.append(i)
+            event_data = [u for i, u in enumerate(event_data) if i not in indexes]
+            print(event_data)
+        print("Sending start signale")
+        for ev_name in done:
+            self.start_events[ev_name].set()
 
     def stop(self):
         self.pool.shutdown()

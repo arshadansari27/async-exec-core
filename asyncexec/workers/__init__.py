@@ -36,5 +36,8 @@ class Communicator(object):
     async def publish(self):
         return await self.queue.get()
 
+    def empty(self):
+        return self.queue.empty()
+
     async def consume(self, data):
         await self.queue.put(data)

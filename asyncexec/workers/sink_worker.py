@@ -3,18 +3,23 @@ from . import Actor
 
 class SinkWorker(object):
 
-    def __init__(self, loop, pool, func, publisher):
+    def __init__(self, loop, pool, func, publisher, ready_event, terminate_event):
         self.loop = loop
         self.actor = Actor(pool, func, is_generator=False)
         self.client = loop.run_until_complete(self.actor.start())
         self.publisher = publisher
         self.event = None
+        self.ready_event = ready_event
+        self.terminate_event = terminate_event
 
     async def start(self):
         count = 0
+        self.ready_event.data = 'SinkWorker'
+        self.ready_event.set()
+        print("Sending Sink Worker ready...")
         while True:
             try:
-                if self.event and self.event.is_set() and self.event.data == 'TERMINATE':
+                if self.publisher.empty() and self.terminate_event.is_set():
                     break
                 count += 1
                 data = await self.publisher.publish()
@@ -22,6 +27,6 @@ class SinkWorker(object):
             except Exception as e:
                 print('Error occured', e)
                 raise
-
-    def set_termination_event(self, event):
-        self.event = event
+        if not self.terminate_event.is_set():
+            self.terminate_event.data = 'DONE'
+            self.terminate_event.set()

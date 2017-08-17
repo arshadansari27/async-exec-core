@@ -20,8 +20,9 @@ class GeneratorWorker(object):
             event.set()
         # queue.put(TERMINATOR)
 
-    def __init__(self, loop, pool, func, consumer, event=None):
-        self.event = event if event else asyncio.Event()
+    def __init__(self, loop, pool, func, consumer, start_event, terminate_event):
+        self.start_event = start_event
+        self.terminate_event = terminate_event
         self.pool = pool
         self.func = func
         self.queue = aioprocessing.AioQueue()
@@ -38,27 +39,24 @@ class GeneratorWorker(object):
 
     async def start(self):
         try:
+            print("Generator: Waiting to begin...")
+            await self.start_event.wait()
+            print("Generator: Begun.")
             self.process.start()
-            retries = 0
             while True:
-                try:
-                    data = await self.queue.coro_get(timeout=1)
-                    print("Taking", data)
-                except Exception as e:
-                    retries += 1
-                    print('Managing error', e, 'retry', retries)
-                    await asyncio.sleep(retries)
-                    if retries < 3:
-                        continue
-
-                if retries >= 3 and self._event and self._event.is_set():
-                    self.event.data = 'TERMINATE'
-                    self.event.set()
-                    self.queue.close()
+                if self.queue.empty() and (self.terminate_event.is_set() or self._event.is_set()):
                     break
-                await self.consumer.consume(data)
-                retries = 0
+                if not self.queue.empty():
+                    data = await self.queue.coro_get()
+                    await self.consumer.consume(data)
+                else:
+                    await asyncio.sleep(1)
             await self.process.coro_join()
+            print("Generator: Terminating..")
+            self.terminate_event.data = 'DONE'
+            self.terminate_event.set()
         except Exception as e:
-            print('[*] Error in generator', e)
+            self.terminate_event.data = str(e)
+            self.terminate_event.set()
             raise
+        print("Generator: Done...")

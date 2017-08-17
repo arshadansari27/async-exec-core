@@ -36,8 +36,7 @@ class AsyncExecutor(object):
         asyncio.set_event_loop(self.loop)
 
     def start(self):
-        for flow in self.flows:
-            flow.start(external_loop_start=True)
+        flows = [flow.start() for flow in self.flows]
         self.loop.run_forever()
 
     def publisher(self, out_channel, out_queue):
@@ -108,10 +107,12 @@ class AsyncExecutor(object):
                     }
                 }
             }
-            flow = Flow(config, loop=self.loop)\
-                .add_listener(channel, queue_request)\
-                .add_worker(func)\
-                .add_publisher(channel, queue_response)
+            flow = Flow(config, loop=self.loop)
+            flow.add_listener(channel, queue_request)
+            if queue_response is None:
+                flow.add_sink(func)
+            else:
+                flow.add_worker(func).add_publisher(channel, queue_response)
             self.flows.append(flow)
 
             return func

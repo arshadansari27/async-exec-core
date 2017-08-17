@@ -23,7 +23,7 @@ class TestSinkWorker(unittest.TestCase):
 
     def test_sinking(self):
         sink_worker = SinkWorker(
-            self.loop, self.pool, self.sink_func, self.publisher)
+            self.loop, self.pool, self.sink_func, self.publisher, asyncio.Event(), asyncio.Event())
         self.loop.create_task(self.publisher.consume(1))
         self.loop.create_task(sink_worker.start())
         self.loop.run_until_complete(asyncio.sleep(.1))

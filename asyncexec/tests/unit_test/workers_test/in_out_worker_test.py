@@ -26,7 +26,7 @@ class TestInOutWorker(unittest.TestCase):
 
     def test_sinking(self):
         inout_worker = InOutWorker(
-            self.loop, self.pool, self.in_out_func, self.publisher, self.consumer)
+            self.loop, self.pool, self.in_out_func, self.publisher, self.consumer, asyncio.Event(), asyncio.Event())
         self.loop.create_task(self.publisher.consume(1))
         self.loop.create_task(inout_worker.start())
         self.loop.run_until_complete(asyncio.sleep(.1))
