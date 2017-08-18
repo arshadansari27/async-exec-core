@@ -36,7 +36,6 @@ class AsyncExecutor(object):
         asyncio.set_event_loop(self.loop)
 
     def start(self):
-        print("Starting...")
         futures = []
         for ix, flow in enumerate(self.flows):
             print(ix)

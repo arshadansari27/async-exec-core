@@ -52,7 +52,6 @@ class GeneratorWorker(object):
                 else:
                     await asyncio.sleep(1)
             await self.process.coro_join()
-            print("Generator: Terminating..")
             self.terminate_event.data = 'DONE'
             self.terminate_event.set()
         except Exception as e:

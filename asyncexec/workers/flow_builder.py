@@ -170,7 +170,6 @@ class Flow(object):
         event_data = [(n, ev) for n, events in self.ready_events.items() for ev in events]
         done = set([])
         while len(event_data) > 0:
-            print('Event Data Len', len(event_data))
             indexes = []
             for i in range(len(event_data)):
                 start_event_name, event = event_data[i]

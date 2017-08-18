@@ -16,7 +16,6 @@ class SinkWorker(object):
         count = 0
         self.ready_event.data = 'SinkWorker'
         self.ready_event.set()
-        print("Sending Sink Worker ready...")
         while True:
             try:
                 if self.publisher.empty() and self.terminate_event.is_set():
