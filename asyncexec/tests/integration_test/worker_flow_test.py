@@ -47,10 +47,11 @@ class TestFlow(unittest.TestCase):
         flow = Flow(self.config, loop=self.loop)\
             .add_generator(gen)\
             .add_worker(fun)\
-            .add_publisher('rabbitmq', 'testing')\
-            .add_listener('rabbitmq', 'testing')\
-            .add_sink(con)
-        flow.start()
+            .add_publisher('rabbitmq', 'testing')
+            #.add_listener('rabbitmq', 'testing')\
+            #.add_sink(con)
+        future = self.loop.run_until_complete(flow.start())
+        print(self.loop.run_until_complete(future))
 
     def tearDown(self):
         pass

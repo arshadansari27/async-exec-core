@@ -36,8 +36,15 @@ class AsyncExecutor(object):
         asyncio.set_event_loop(self.loop)
 
     def start(self):
-        flows = [flow.start() for flow in self.flows]
-        self.loop.run_forever()
+        print("Starting...")
+        futures = []
+        for ix, flow in enumerate(self.flows):
+            print(ix)
+            future = self.loop.run_until_complete(flow.start())
+            futures.append(future)
+        for future in asyncio.gather(*futures):
+            print(self.loop.run_until_complete(future))
+
 
     def publisher(self, out_channel, out_queue):
         def decorator(func):
@@ -60,6 +67,7 @@ class AsyncExecutor(object):
                 .add_generator(func) \
                 .add_publisher(out_channel, out_queue)
             self.flows.append(flow)
+            print('flow', out_channel, out_queue, 'ready')
 
             return func
         return decorator
@@ -85,6 +93,7 @@ class AsyncExecutor(object):
                 .add_listener(in_channel, in_queue)\
                 .add_sink(func)
             self.flows.append(flow)
+            print('flow', in_channel, in_queue, 'ready')
 
             return func
         return decorator
@@ -114,6 +123,7 @@ class AsyncExecutor(object):
             else:
                 flow.add_worker(func).add_publisher(channel, queue_response)
             self.flows.append(flow)
+            print('flow', channel, queue_request, queue_response, 'ready')
 
             return func
         return decorator
