@@ -23,13 +23,10 @@ def worker_factory(type='inout'):
 
 def shutdown():
     """Performs a clean shutdown"""
-    while True:
-        import time
-        for task in asyncio.Task.all_tasks():
-            if task.done():
-                continue
-            print('Task Pending', task)
-        time.sleep(1)
+    for task in asyncio.Task.all_tasks():
+        if task.done():
+            continue
+        task.cancel()
 
 
 def shutdown_handler(pool):
@@ -96,7 +93,8 @@ class Flow(object):
             queue,
             communicator,
             self.start_event,
-            self.terminate_event
+            self.terminate_event,
+            flow_id=self.id
         )
         self.coroutines.append(listener)
         self.previous_communicator = communicator
@@ -110,7 +108,8 @@ class Flow(object):
 
         publisher = PublisherFactory.instantiate(
             tech, self.loop, self.middleware_config.get(tech),
-            queue, self.previous_communicator, ready_event, self.terminate_event
+            queue, self.previous_communicator, ready_event, self.terminate_event,
+            flow_id=self.id
         )
         self.ready_events[self.start_event_name].append(ready_event)
         self.coroutines.append(publisher)
@@ -132,12 +131,13 @@ class Flow(object):
         self.coroutines.append(generator_worker)
         return self
 
-    def add_sink(self, func):
+    def add_sink(self, func, callback=None, count=None):
         if self.previous_communicator is None or len(self.coroutines) is 0:
             raise Exception("Cannot add a sink worker without anything to listen from")
         ready_event = asyncio.Event()
         sink_worker = SinkWorker(
-            self.loop, self.pool, func, self.previous_communicator, ready_event, self.terminate_event
+            self.loop, self.pool, func, self.previous_communicator,
+            ready_event, self.terminate_event, callback=callback, count=count
         )
         self.ready_events[self.start_event_name].append(ready_event)
         self.coroutines.append(sink_worker)
@@ -158,12 +158,10 @@ class Flow(object):
         return self
 
     async def start(self):
-        print("Starting", self.__class__)
+        print("Starting", self.id)
         self.futures = []
         for coroutine in self.coroutines:
             self.futures.append(self.loop.create_task(coroutine.start()))
-            # self.loop.run_until_complete(coroutine.start())
-            print('....')
         return self.loop.create_task(self.start_on_all_ready())
 
     async def start_on_all_ready(self):
@@ -181,7 +179,6 @@ class Flow(object):
                     done.add(start_event_name)
                     indexes.append(i)
             event_data = [u for i, u in enumerate(event_data) if i not in indexes]
-            print(event_data)
         for ev_name in done:
             self.start_events[ev_name].set()
         while True:

@@ -28,25 +28,28 @@ async_executor = AsyncExecutor({
     }
 })
 
-import time
 
-@async_executor.publisher('redis', 'out_q2')
-def test_rabbit_gen():
-    import time
-    while True:
-        for i in range(10):
-            yield i
-        time.sleep(1)
+def callback(result):
+    print("FINAL RESULT", result)
 
-@async_executor.handler('rabbitmq', 'in_q1', 'out_q2')
-def test_method1(data):
+def _collector(result, data):
+    result = int(result) if result else 0
+    result = result + int(data)
+    return result
+
+@async_executor.publisher('rabbitmq', 'test_queue1')
+def _generator():
+    for i in range(10):
+        yield i
+
+@async_executor.handle_and_collect('rabbitmq', 'test_queue1', reducer=_collector, callback=callback, count=2)
+def _handler(data):
     print ("Called 1", data)
-    return 'result'
+    return int(data) * 2
 
-@async_executor.handler('redis', 'in_q2', 'out_q2')
-def test_method2(data):
-    print ("Called 2", data)
-    return 'result'
+
+
+
 
 '''
 @async_executor.publisher('redis', 'tseing')

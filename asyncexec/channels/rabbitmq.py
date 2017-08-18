@@ -6,12 +6,14 @@ import random
 
 class RabbitMQListener(Listener):
 
-    def __init__(self, loop, configurations, queue_name, consumer, start_event, terminate_event):
-        super(RabbitMQListener, self).__init__(loop, configurations, queue_name, consumer, start_event, terminate_event)
+    def __init__(self, loop, configurations, queue_name, consumer, start_event, terminate_event, flow_id=None):
+        super(RabbitMQListener, self).__init__(loop, configurations, queue_name, consumer, start_event, terminate_event, flow_id=flow_id)
 
     async def in_message_handler(self, message):
         with message.process():
-            await self.consumer.consume(message.body)
+            msg = message.body
+            print('[RabbitMQ: {}](Listener) {}'.format(self.flow_id, msg))
+            await self.consumer.consume(msg)
 
     async def start(self):
         try:
@@ -20,9 +22,9 @@ class RabbitMQListener(Listener):
             in_channel = await connection.channel()
             # await in_channel.set_qos(prefetch_count=1)
             in_queue = await in_channel.declare_queue(self.queue_name, durable=True)
-            print("Rabbit Listener: awaiting to start")
+            print('[RabbitMQ: {}](Listener) awaiting to start..'.format(self.flow_id))
             await self.start_event.wait()
-            print("Rabbit Listener: started..")
+            print('[RabbitMQ: {}](Listener) started..'.format(self.flow_id))
             if self.terminate_event.is_set():
                 raise Exception("Rabbit Listener: Termination event occurred before starting...")
             in_queue.consume(self.in_message_handler)
@@ -36,8 +38,8 @@ class RabbitMQListener(Listener):
 
 class RabbitMQPublisher(Publisher):
 
-    def __init__(self, loop, configurations, queue_name, publisher, ready_event, terminate_event):
-        super(RabbitMQPublisher, self).__init__(loop, configurations, queue_name, publisher, ready_event, terminate_event)
+    def __init__(self, loop, configurations, queue_name, publisher, ready_event, terminate_event, flow_id=None):
+        super(RabbitMQPublisher, self).__init__(loop, configurations, queue_name, publisher, ready_event, terminate_event, flow_id=flow_id)
 
     async def start(self):
         if not self.username or not self.password:
@@ -49,13 +51,14 @@ class RabbitMQPublisher(Publisher):
             out_channel = await connection.channel()
             self.ready_event.data = 'RabbitMQPublisher'
             self.ready_event.set()
-            print("Rabbit Publisher: started..")
+            print('[RabbitMQ: {}](Publisher) started...'.format(self.flow_id))
             while True:
                 if self.publisher.empty() and self.terminate_event.is_set():
                     print("rabbitmq publisher queue empty and terminated")
                     break
                 message = await self.publisher.publish()
                 message_body = Message(str(message).encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
+                print('[RabbitMQ: {}](Publisher) {}'.format(self.flow_id, message))
                 await out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
         except Exception as e:
             self.error_handler(e)

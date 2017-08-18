@@ -4,8 +4,8 @@ from asyncexec.channels import Listener, Publisher
 
 class RedisListener(Listener):
 
-    def __init__(self, loop, configurations, queue_name, consumer, start_event, terminate_event):
-        super(RedisListener, self).__init__(loop, configurations, queue_name, consumer, start_event, terminate_event)
+    def __init__(self, loop, configurations, queue_name, consumer, start_event, terminate_event, flow_id=None):
+        super(RedisListener, self).__init__(loop, configurations, queue_name, consumer, start_event, terminate_event, flow_id=flow_id)
 
     async def start(self):
         conn_pool = None
@@ -17,6 +17,7 @@ class RedisListener(Listener):
             while True:
                 while await conn_pool.llen(self.queue_name) > 0:
                     _, message = await conn_pool.blpop(self.queue_name)
+                    print('[Redis: {}](Listener) {}'.format(self.flow_id, message))
                     await self.consumer.consume(message)
         except Exception as e:
             self.error_handler(e)
@@ -28,8 +29,8 @@ class RedisListener(Listener):
 
 class RedisPublisher(Publisher):
 
-    def __init__(self, loop, configurations, queue_name, publisher, ready_event, terminate_event):
-        super(RedisPublisher, self).__init__(loop, configurations, queue_name, publisher, ready_event, terminate_event)
+    def __init__(self, loop, configurations, queue_name, publisher, ready_event, terminate_event, flow_id=None):
+        super(RedisPublisher, self).__init__(loop, configurations, queue_name, publisher, ready_event, terminate_event, flow_id=flow_id)
 
     async def start(self):
         conn_pool = None
@@ -41,6 +42,7 @@ class RedisPublisher(Publisher):
                 if  self.publisher.empty() and self.terminate_event.is_set():
                     break
                 message = await self.publisher.publish()
+                print('[Redis: {}](Publisher) {}'.format(self.flow_id, message))
                 _ = await conn_pool.lpush(self.queue_name, message)
         except Exception as e:
             self.error_handler(e)

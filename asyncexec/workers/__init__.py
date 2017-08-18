@@ -1,6 +1,7 @@
 import aiozmq
 import aiozmq.rpc
 import asyncio
+import traceback, sys
 
 
 class Actor(aiozmq.rpc.AttrHandler):
@@ -21,11 +22,17 @@ class Actor(aiozmq.rpc.AttrHandler):
     def handler(self, *args, **kwargs):
         if not self.func:
             raise Exception("Actor does not have the method configured")
-        future = self.pool.submit(self.func, *args, **kwargs)
-        if self.is_generator:
-            return future.result()
-        else:
-            return None
+        try:
+            future = self.pool.submit(self.func, *args, **kwargs)
+            if self.is_generator:
+                res = future.result()
+                return res
+            else:
+                return None
+        except Exception as e:
+            print('Error Occurred in Actor', e)
+            traceback.print_exc(file=sys.stdout)
+            raise e
 
 
 class Communicator(object):

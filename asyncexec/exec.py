@@ -66,7 +66,7 @@ class AsyncExecutor(object):
                 .add_generator(func) \
                 .add_publisher(out_channel, out_queue)
             self.flows.append(flow)
-            print('flow', out_channel, out_queue, 'ready')
+            print('flow [publisher: {}]'.format(flow.id), out_channel, out_queue, 'ready')
 
             return func
         return decorator
@@ -92,7 +92,7 @@ class AsyncExecutor(object):
                 .add_listener(in_channel, in_queue)\
                 .add_sink(func)
             self.flows.append(flow)
-            print('flow', in_channel, in_queue, 'ready')
+            print('flow [subscriber: {}]'.format(flow.id), in_channel, in_queue, 'ready')
 
             return func
         return decorator
@@ -122,7 +122,63 @@ class AsyncExecutor(object):
             else:
                 flow.add_worker(func).add_publisher(channel, queue_response)
             self.flows.append(flow)
-            print('flow', channel, queue_request, queue_response, 'ready')
+            print('flow [handler: {}]'.format(flow.id), channel, queue_request, queue_response, 'ready')
 
             return func
         return decorator
+
+    def handle_and_collect(self, in_channel, in_queue, reducer=None, callback=None, count=None, max_workers=4):
+        def decorator(func):
+            print ("Registering collector {} for channel: {} on queue ({}) with callback {}".format(
+                func.__name__, in_channel, in_queue, callback
+            ))
+            assert in_channel in self.channel_configurations
+            host, port, username, password = self.channel_configurations[in_channel]
+            config = {
+                'max_workers': max_workers,
+                'middlewares': {
+                    in_channel: {
+                        'host': host,
+                        'port': port,
+                        'username': username,
+                        'password': password
+                    }
+                }
+            }
+            flow = Flow(config, loop=self.loop)
+            flow.add_listener(in_channel, in_queue)
+            flow.add_worker(func)
+            flow.add_sink(reducer, callback=callback, count=count)
+            self.flows.append(flow)
+            print('flow [handle and collect: {}]'.format(flow.id), in_channel, in_channel, 'ready')
+
+            return func
+        return decorator
+
+    def collector(self, in_channel, in_queue, callback=None, count=None, max_workers=4):
+        def decorator(func):
+            print ("Registering collector {} for channel: {} on queue ({}) with callback {}".format(
+                func.__name__, in_channel, in_queue, callback
+            ))
+            assert in_channel in self.channel_configurations
+            host, port, username, password = self.channel_configurations[in_channel]
+            config = {
+                'max_workers': max_workers,
+                'middlewares': {
+                    in_channel: {
+                        'host': host,
+                        'port': port,
+                        'username': username,
+                        'password': password
+                    }
+                }
+            }
+            flow = Flow(config, loop=self.loop)
+            flow.add_listener(in_channel, in_queue)
+            flow.add_sink(func, callback=callback, count=count)
+            self.flows.append(flow)
+            print('flow [collector: {}]'.format(flow.id), in_channel, in_channel, 'ready')
+
+            return func
+        return decorator
+
