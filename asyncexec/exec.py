@@ -155,6 +155,34 @@ class AsyncExecutor(object):
             return func
         return decorator
 
+    def handle_and_broadcast(self, in_channel, in_queue, out_channel, *out_queues, max_workers=4):
+        def decorator(func):
+            print ("Registering handler and broadcast '{}' for channel: {} and {} and on queue ({}, {}) ".format(
+                func.__name__, in_channel, out_channel, in_queue, ','.join(out_queues)
+            ))
+            assert in_channel in self.channel_configurations
+            host, port, username, password = self.channel_configurations[in_channel]
+            config = {
+                'max_workers': max_workers,
+                'middlewares': {
+                    in_channel: {
+                        'host': host,
+                        'port': port,
+                        'username': username,
+                        'password': password
+                    }
+                }
+            }
+            flow = Flow(config, loop=self.loop)
+            flow.add_listener(in_channel, in_queue)
+            flow.add_worker(func)
+            flow.add_broadcast_publisher(out_channel, *out_queues)
+            self.flows.append(flow)
+            print('flow [handler and broadcast: {}]'.format(flow.id), in_channel, in_queue, out_channel, ','.join(out_queues), 'ready')
+
+            return func
+        return decorator
+
     def collector(self, in_channel, in_queue, callback=None, count=None, max_workers=4):
         def decorator(func):
             print ("Registering collector {} for channel: {} on queue ({}) with callback {}".format(
