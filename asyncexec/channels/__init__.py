@@ -1,4 +1,5 @@
 from uuid import uuid4
+import asyncio
 
 
 class External(object):
@@ -40,6 +41,52 @@ class Publisher(External):
         if not self.terminate_event.is_set():
             self.terminate_event.data = str(error)
             self.terminate_event.set()
+
+
+class CompositePublisher(object):
+
+    def __init__(self, loop, publisher, consumers, ready_event, terminate_event, flow_id=None):
+        assert len(consumers) > 0
+        self.loop = loop
+        self.publisher = publisher
+        self.consumers = consumers
+        self.ready_event = ready_event
+        self.terminate_event = terminate_event
+        self.flow_id = flow_id
+
+    def error_handler(self, error):
+        if not self.ready_event.is_set():
+            self.ready_event.data = 'ERROR: ' + str(error)
+            self.ready_event.set()
+        if not self.terminate_event.is_set():
+            self.terminate_event.data = str(error)
+            self.terminate_event.set()
+
+    async def start(self):
+        try:
+            self.ready_event.data = 'CompositePublisher'
+            self.ready_event.set()
+            print('[CompositePublisher: {}](Publisher) started...'.format(self.flow_id))
+            while True:
+                while True:
+                    if self.publisher.empty() and self.terminate_event.is_set():
+                        print('[CompositePublisher: {}](Publisher) ... done'.format(self.flow_id))
+                        break
+                    message = await self.publisher.publish_nowait()
+                    if not message:
+                        await asyncio.sleep(.1)
+                    else:
+                        break
+
+                for consumer in self.consumers:
+                    await consumer.consume(message)
+                if self.publisher.empty() and self.terminate_event.is_set():
+                    print('[CompositePublisher: {}](Publisher) ... done'.format(self.flow_id))
+                    break
+        except Exception as e:
+            self.error_handler(e)
+            print("Error occured", e)
+            raise
 
 
 class ListenerFactory(object):

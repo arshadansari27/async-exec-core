@@ -17,8 +17,14 @@ def gen():
         yield i
 
 
-def con(data):
-    print('[*]', data)
+def con1(R, data):
+    print('[*](1)', data)
+    return R
+
+
+def con2(R, data):
+    print('[*](2)', data)
+    return R
 
 
 class TestFlow(unittest.TestCase):
@@ -46,10 +52,11 @@ class TestFlow(unittest.TestCase):
     def test_flow(self):
         flow = Flow(self.config, loop=self.loop)\
             .add_generator(gen)\
-            .add_worker(fun)\
-            .add_publisher('rabbitmq', 'testing')
-            #.add_listener('rabbitmq', 'testing')\
-            #.add_sink(con)
+            .add_broadcast_publisher('rabbitmq', 'testing1', 'testing2')
+            #.add_listener('rabbitmq', 'testing1')\
+            #.add_sink(con1)\
+            #.add_listener('rabbitmq', 'testing2') \
+            #.add_sink(con2)
         future = self.loop.run_until_complete(flow.start())
         print(self.loop.run_until_complete(future))
 

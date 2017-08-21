@@ -12,7 +12,7 @@ class RabbitMQListener(Listener):
     async def in_message_handler(self, message):
         with message.process():
             msg = message.body
-            print('[RabbitMQ: {}](Listener) {}'.format(self.flow_id, msg))
+            # print('[RabbitMQ: {}](Listener) {}'.format(self.flow_id, msg))
             await self.consumer.consume(msg)
 
     async def start(self):
@@ -54,11 +54,11 @@ class RabbitMQPublisher(Publisher):
             print('[RabbitMQ: {}](Publisher) started...'.format(self.flow_id))
             while True:
                 if self.publisher.empty() and self.terminate_event.is_set():
-                    print("rabbitmq publisher queue empty and terminated")
+                    print('[RabbitMQ: {}](Publisher) done...'.format(self.flow_id))
                     break
                 message = await self.publisher.publish()
                 message_body = Message(str(message).encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
-                print('[RabbitMQ: {}](Publisher) {}'.format(self.flow_id, message))
+                # print('[RabbitMQ: {}](Publisher) {}'.format(self.flow_id, message))
                 await out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
         except Exception as e:
             self.error_handler(e)

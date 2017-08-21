@@ -43,6 +43,11 @@ class Communicator(object):
     async def publish(self):
         return await self.queue.get()
 
+    async def publish_nowait(self):
+        if self.queue.empty():
+            return None
+        return self.queue.get_nowait()
+
     def empty(self):
         return self.queue.empty()
 

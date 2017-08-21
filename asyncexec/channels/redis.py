@@ -17,7 +17,6 @@ class RedisListener(Listener):
             while True:
                 while await conn_pool.llen(self.queue_name) > 0:
                     _, message = await conn_pool.blpop(self.queue_name)
-                    print('[Redis: {}](Listener) {}'.format(self.flow_id, message))
                     await self.consumer.consume(message)
         except Exception as e:
             self.error_handler(e)
@@ -38,11 +37,11 @@ class RedisPublisher(Publisher):
             conn_pool = await aioredis.create_redis((self.host, self.port))
             self.ready_event.data = 'RedisPublisher'
             self.ready_event.set()
+            print('[Redis: {}](Publisher) started...'.format(self.flow_id))
             while True:
                 if  self.publisher.empty() and self.terminate_event.is_set():
                     break
                 message = await self.publisher.publish()
-                print('[Redis: {}](Publisher) {}'.format(self.flow_id, message))
                 _ = await conn_pool.lpush(self.queue_name, message)
         except Exception as e:
             self.error_handler(e)

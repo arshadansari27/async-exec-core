@@ -116,6 +116,35 @@ class Flow(object):
         self.previous_communicator = None
         return self
 
+    def add_broadcast_publisher(self, tech, *queues):
+        from asyncexec.channels import CompositePublisher
+        assert self.middleware_config.get(tech) is not None
+        if self.previous_communicator is None:
+            raise Exception("Cannot add a publisher to middleware without anything to publish from")
+        consumers = []
+        for queue in queues:
+            print("Adding queue", queue)
+            ready_event = asyncio.Event()
+            communicator = Communicator()
+            publisher = PublisherFactory.instantiate(
+                tech, self.loop, self.middleware_config.get(tech),
+                queue, communicator, ready_event, self.terminate_event,
+                flow_id=self.id
+            )
+            self.ready_events[self.start_event_name].append(ready_event)
+            consumers.append(communicator)
+            self.coroutines.append(publisher)
+        ready_event = asyncio.Event()
+        composite_publisher = CompositePublisher(self.loop,
+                                                 self.previous_communicator,
+                                                 consumers, ready_event, self.terminate_event,
+                                                 flow_id=self.id)
+        self.ready_events[self.start_event_name].append(ready_event)
+        print("added composite")
+        self.coroutines.append(composite_publisher)
+        self.previous_communicator = None
+        return self
+
     def add_generator(self, func):
         self.start_event = asyncio.Event()
         self.start_event_name = str(uuid4())
