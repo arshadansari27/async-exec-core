@@ -40,9 +40,10 @@ class Communicator(object):
 
     def __init__(self):
         self.queue  = asyncio.Queue()
-        self.router = yield from aiozmq.create_zmq_stream(zmq.ROUTER, bind='ipc://*:*')
+        self.router = await aiozmq.create_zmq_stream(zmq.ROUTER, bind='ipc://*:*')
         addr = list(router.transport.bindings())[0]
-        self.dealer = yield from aiozmq.create_zmq_stream(zmq.DEALER, connect=addr)
+        self.dealer = await aiozmq.create_zmq_stream(zmq.DEALER, connect=addr)
+        print('Communicator')
 
     async def publish(self):
         data = await self.router.read()
@@ -51,9 +52,6 @@ class Communicator(object):
 
     async def publish_nowait(self):
         raise Exception("Not implemented")
-        if self.queue.empty():
-            return None
-        return self.queue.get_nowait()
 
     def empty(self):
         raise Exception("Not implemented")
