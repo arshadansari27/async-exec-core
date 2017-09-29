@@ -27,7 +27,7 @@ class SinkWorker(object):
                 count += 1
                 if self.publisher.empty() and self.terminate_event.is_set():
                     break
-                for data in await self.publisher.publish()
+                for data in await self.publisher.publish():
                     result = await self.client.call.handler(result, data)
                     if self.count and self.callback and (count % self.count is 0):
                         self.callback(result)
