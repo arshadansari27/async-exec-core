@@ -15,7 +15,6 @@ class GeneratorWorker(object):
             for data in func():
                 if not loop.is_running():
                     break
-                print("Putting", data)
                 queue.put(data)
             print("Setting event to terminate")
             event.set()
@@ -55,7 +54,6 @@ class GeneratorWorker(object):
             await self.process.coro_join()
             self.terminate_event.data = 'DONE'
             self.terminate_event.set()
-            self.consumer.close()
         except Exception as e:
             self.terminate_event.data = str(e)
             self.terminate_event.set()

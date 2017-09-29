@@ -41,36 +41,29 @@ from collections import deque
 class Communicator(object):
 
     def __init__(self):
-        #self.queue  = asyncio.Queue()
-        self.router = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.ROUTER, bind='ipc://*:*'))
-        self.addr = list(self.router.transport.bindings())[0]
-        self.dealer = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.DEALER, connect=self.addr))
-        self.closed = False
-        self.first = True
-        print('Communicator')
+        self.queue  = asyncio.Queue()
+        #self.router = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.ROUTER, bind='ipc://*:*'))
+        #self.addr = list(self.router.transport.bindings())[0]
+        #self.dealer = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.DEALER, connect=self.addr))
+        #self.closed = False
+        #self.first = True
 
     async def publish(self):
-        print("Waiting on read from router")
-        data = await self.router.read()
-        print('router:', data[1].decode('utf-8'))
-        self.router.write(data)
-        return data[1].decode('utf-8')
+        #data = await self.router.read()
+        #self.router.write(data)
+        #return data[1].decode('utf-8')
+        while not self.queue.empty()
+            yield await self.queue.get()
 
     async def publish_nowait(self):
         raise Exception("Not implemented")
 
     def empty(self):
-        return self.closed
+        return self.queue.empty()
 
     async def consume(self, data):
-        #await self.queue.put(data)
-        print('dealer:', data)
-        self.dealer.write((data.encode('utf-8'),))
-        u = await self.dealer.read()
-        print(u)
-         
-
-
-    def close(self):
-        self.dealer.close()
-        self.closed = True
+        await self.queue.put(data)
+        #print('dealer:', data)
+        #self.dealer.write((data.encode('utf-8'),))
+        #u = await self.dealer.read()
+        #print(u)

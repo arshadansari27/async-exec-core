@@ -41,8 +41,8 @@ class RedisPublisher(Publisher):
             while True:
                 if  self.publisher.empty() and self.terminate_event.is_set():
                     break
-                message = await self.publisher.publish()
-                _ = await conn_pool.lpush(self.queue_name, message)
+                for message in await self.publisher.publish():
+                    _ = await conn_pool.lpush(self.queue_name, message)
         except Exception as e:
             traceback.print_exc()
             exit(1)
