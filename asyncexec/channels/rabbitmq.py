@@ -62,13 +62,15 @@ class RabbitMQPublisher(Publisher):
                 mms = await self.publisher.publish()
                 futures = []
                 for message in mms:
-                    message_body = Message(str(message).encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
-                    f = out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
-                    futures.append(f)
-                for f in asyncio.gather(*futures):
                     count += 1
+                    message_body = Message(str(message).encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
+                    futures.append(out_channel.default_exchange.publish(message_body, routing_key=self.queue_name))
                     if count % 10 is 0:
                         print('[*] C', count)
+                        await asyncio.gather(*futures)
+                        futures = []
+                await asyncio.gather(*futures)
+
         except Exception as e:
             traceback.print_exc()
             exit(1)
