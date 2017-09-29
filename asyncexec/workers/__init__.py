@@ -42,32 +42,30 @@ class Communicator(object):
 
     def __init__(self):
         #self.queue  = asyncio.Queue()
-        self.queue  = deque()
-        #self.router = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.ROUTER, bind='ipc://*:*'))
-        #self.addr = list(self.router.transport.bindings())[0]
-        #self.dealer = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.DEALER, connect=self.addr))
+        self.router = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.ROUTER, bind='ipc://*:*'))
+        self.addr = list(self.router.transport.bindings())[0]
+        self.dealer = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.DEALER, connect=self.addr))
         self.closed = False
         print('Communicator')
 
     async def publish(self):
-        #data = await self.router.read()
-        self.queue.popleft()
-        #print('router:', data[1].decode('utf-8'))
-        #return data[1].decode('utf-8')
+        print("Waiting on read from router")
+        data = await self.router.read()
+        print('router:', data[1].decode('utf-8'))
+        return data[1].decode('utf-8')
 
     async def publish_nowait(self):
         raise Exception("Not implemented")
 
     def empty(self):
-        return len(list(self.queue))
+        return self.closed
 
     async def consume(self, data):
         #await self.queue.put(data)
-        self.queue.append(data)
-        #print('dealer:', data)
-        #await self.dealer.write((data.encode('utf-8'),))
+        print('dealer:', data)
+        await self.dealer.write((data.encode('utf-8'),))
 
 
     def close(self):
-        #self.dealer.close()
+        self.dealer.close()
         self.closed = True
