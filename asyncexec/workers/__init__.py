@@ -46,12 +46,14 @@ class Communicator(object):
         self.addr = list(self.router.transport.bindings())[0]
         self.dealer = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.DEALER, connect=self.addr))
         self.closed = False
+        self.first = True
         print('Communicator')
 
     async def publish(self):
         print("Waiting on read from router")
         data = await self.router.read()
         print('router:', data[1].decode('utf-8'))
+        self.router.write(data)
         return data[1].decode('utf-8')
 
     async def publish_nowait(self):
@@ -64,6 +66,9 @@ class Communicator(object):
         #await self.queue.put(data)
         print('dealer:', data)
         self.dealer.write((data.encode('utf-8'),))
+        u = await self.dealer.read()
+        print(u)
+         
 
 
     def close(self):
