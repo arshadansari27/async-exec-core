@@ -42,19 +42,12 @@ class Communicator(object):
 
     def __init__(self):
         self.queue  = asyncio.Queue()
-        #self.router = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.ROUTER, bind='ipc://*:*'))
-        #self.addr = list(self.router.transport.bindings())[0]
-        #self.dealer = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.DEALER, connect=self.addr))
-        #self.closed = False
-        #self.first = True
 
     async def publish(self):
-        #data = await self.router.read()
-        #self.router.write(data)
-        #return data[1].decode('utf-8')
         responses = []
         while not self.queue.empty():
             data = await self.queue.get()
+            print("Adding to response", data)
             responses.append(data)
         return responses
 
@@ -66,7 +59,3 @@ class Communicator(object):
 
     async def consume(self, data):
         await self.queue.put(data)
-        #print('dealer:', data)
-        #self.dealer.write((data.encode('utf-8'),))
-        #u = await self.dealer.read()
-        #print(u)
