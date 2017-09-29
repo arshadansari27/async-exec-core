@@ -50,6 +50,7 @@ class Communicator(object):
         while not self.queue.empty():
             data = await self.queue.get()
             responses.append(data)
+        print("Writing to queue at a time", len(responses))
         return responses
 
     async def publish_nowait(self):
