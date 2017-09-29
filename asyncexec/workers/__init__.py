@@ -60,4 +60,4 @@ class Communicator(object):
 
     async def consume(self, data):
         print('dealer:', data)
-        await self.dealer.write((data.encode('utf-8'),)
+        await self.dealer.write((data.encode('utf-8'),))
