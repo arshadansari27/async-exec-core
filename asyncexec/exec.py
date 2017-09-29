@@ -33,6 +33,7 @@ class AsyncExecutor(object):
 
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self.loop = uvloop.new_event_loop()
+        self.loop.set_exception_handler(lambda x: exit(1))
         asyncio.set_event_loop(self.loop)
 
     def start(self):
@@ -42,9 +43,6 @@ class AsyncExecutor(object):
             future = self.loop.run_until_complete(flow.start())
             futures.append(future)
         for future in asyncio.gather(*futures):
-            if future.exception():
-                print('*****', future.exception())
-                exit(1)
             print(self.loop.run_until_complete(future))
 
 
