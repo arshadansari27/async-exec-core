@@ -63,7 +63,7 @@ class RabbitMQPublisher(Publisher):
                 futures = []
                 for message in mms:
                     count += 1
-                    message_body = Message(str(message).encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
+                    message_body = Message(str(message).encode('utf-8'))
                     futures.append(out_channel.default_exchange.publish(message_body, routing_key=self.queue_name))
                     if count % 10 is 0:
                         print('[*] C', count)

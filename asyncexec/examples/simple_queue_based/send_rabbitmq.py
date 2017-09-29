@@ -13,16 +13,15 @@ async def main(loop, ip, queue, message):
 
     # logs_exchange = await channel.declare_exchange(queue, ExchangeType.TOPIC)
 
-    for i in range(1):
+    for i in range(10000):
 
         message_body = message.encode('utf-8')
 
-        message = Message(
-            message_body,
-            delivery_mode=DeliveryMode.PERSISTENT
+        message2 = Message(
+            message_body
         )
 
-        await channel.default_exchange.publish(message, routing_key=queue)
+        await channel.default_exchange.publish(message2, routing_key=queue)
 
         print(" [x] Sent %r" % message_body)
 
