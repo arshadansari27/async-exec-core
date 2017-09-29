@@ -42,7 +42,7 @@ class Communicator(object):
         self.queue  = asyncio.Queue()
         self.router = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.ROUTER, bind='ipc://*:*'))
         self.addr = list(self.router.transport.bindings())[0]
-        self.dealer = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.DEALER, connect=addr))
+        self.dealer = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.DEALER, connect=self.addr))
         print('Communicator')
 
     async def publish(self):
