@@ -55,12 +55,12 @@ class RabbitMQPublisher(Publisher):
             self.ready_event.set()
             print('[RabbitMQ: {}](Publisher) started...'.format(self.flow_id))
             while True:
-                count += 1
                 if self.publisher.empty() and self.terminate_event.is_set():
                     print('[RabbitMQ: {}](Publisher) done...'.format(self.flow_id))
                     break
                 mms = await self.publisher.publish()
                 for message in mms:
+                    count += 1
                     message_body = Message(str(message).encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
                     await out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
                     if count % 10 is 0:
