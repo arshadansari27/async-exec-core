@@ -69,7 +69,6 @@ class RabbitMQPublisher(Publisher):
                     count += 1
                     if count % 10 is 0:
                         print('[*] C', count)
-                    await f
         except Exception as e:
             traceback.print_exc()
             exit(1)
