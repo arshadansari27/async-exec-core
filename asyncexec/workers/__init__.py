@@ -59,7 +59,7 @@ class Communicator(object):
         raise Exception("Not implemented")
 
     def empty(self):
-        return self.queue.empty()
+        return len(list(self.queue))
 
     async def consume(self, data):
         #await self.queue.put(data)
