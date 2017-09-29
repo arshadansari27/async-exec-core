@@ -3,6 +3,7 @@ from aio_pika import connect, Message, DeliveryMode, ExchangeType
 from asyncexec.channels import Listener, Publisher
 import random
 import traceback
+from concurrent.futures import as_completed
 
 
 class RabbitMQListener(Listener):
@@ -61,13 +62,13 @@ class RabbitMQPublisher(Publisher):
                 mms = await self.publisher.publish()
                 futures = []
                 for message in mms:
-                    count += 1
                     message_body = Message(str(message).encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
                     f = out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
                     futures.append(f)
+                for f in as_completed(futures):
+                    count += 1
                     if count % 10 is 0:
                         print('[*] C', count)
-                for f in futures:
                     await f
         except Exception as e:
             traceback.print_exc()
