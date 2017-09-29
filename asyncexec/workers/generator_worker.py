@@ -48,6 +48,7 @@ class GeneratorWorker(object):
                     break
                 if not self.queue.empty():
                     data = await self.queue.coro_get()
+                    print("Consuming Data", data)
                     await self.consumer.consume(data)
                 else:
                     await asyncio.sleep(1)
