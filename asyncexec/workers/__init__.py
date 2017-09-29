@@ -63,7 +63,7 @@ class Communicator(object):
     async def consume(self, data):
         #await self.queue.put(data)
         print('dealer:', data)
-        await self.dealer.write((data.encode('utf-8'),))
+        self.dealer.write((data.encode('utf-8'),))
 
 
     def close(self):
