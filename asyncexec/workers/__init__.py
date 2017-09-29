@@ -52,8 +52,11 @@ class Communicator(object):
         #data = await self.router.read()
         #self.router.write(data)
         #return data[1].decode('utf-8')
+        responses = []
         while not self.queue.empty():
-            yield await self.queue.get()
+            data = await self.queue.get()
+            responses.append(data)
+        return responses
 
     async def publish_nowait(self):
         raise Exception("Not implemented")
