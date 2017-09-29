@@ -41,7 +41,7 @@ class Communicator(object):
     def __init__(self):
         self.queue  = asyncio.Queue()
         self.router = aiozmq.create_zmq_stream(zmq.ROUTER, bind='ipc://*:*')
-        addr = list(router.transport.bindings())[0]
+        addr = list(self.router.transport.bindings())[0]
         self.dealer = aiozmq.create_zmq_stream(zmq.DEALER, connect=addr)
         print('Communicator')
 
