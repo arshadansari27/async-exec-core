@@ -44,14 +44,7 @@ class Communicator(object):
         self.queue  = asyncio.Queue()
 
     async def publish(self):
-        responses = []
-        data = await self.queue.get()
-        responses.append(data)
-        while not self.queue.empty():
-            data = await self.queue.get()
-            responses.append(data)
-        print("Writing to queue at a time", len(responses))
-        return responses
+        return await self.queue.get()
 
     async def publish_nowait(self):
         raise Exception("Not implemented")
