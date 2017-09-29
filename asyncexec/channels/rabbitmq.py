@@ -62,7 +62,7 @@ class RabbitMQPublisher(Publisher):
                 for message in mms:
                     count += 1
                     message_body = Message(str(message).encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
-                    await out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
+                    out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
                     if count % 10 is 0:
                         print('[*] C', count)
         except Exception as e:
