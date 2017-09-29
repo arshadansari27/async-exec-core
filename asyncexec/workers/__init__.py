@@ -50,9 +50,9 @@ class Communicator(object):
         if self.closed:
             self.router.close()
             return
-        data = await self.router.read()[1].decode('utf-8')
-        print('router:', data)
-        return data
+        data = await self.router.read()
+        print('router:', data[1].decode('utf-8'))
+        return data[1].decode('utf-8')
 
     async def publish_nowait(self):
         raise Exception("Not implemented")
