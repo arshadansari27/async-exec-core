@@ -59,5 +59,6 @@ class GeneratorWorker(object):
             self.terminate_event.data = str(e)
             self.terminate_event.set()
             traceback.print_exc()
+            print('*************************')
             exit(1)
         print("Generator: Done...")
