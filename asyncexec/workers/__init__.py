@@ -43,9 +43,13 @@ class Communicator(object):
         self.router = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.ROUTER, bind='ipc://*:*'))
         self.addr = list(self.router.transport.bindings())[0]
         self.dealer = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.DEALER, connect=self.addr))
+        self.closed = False
         print('Communicator')
 
     async def publish(self):
+        if self.closed:
+            self.router.close()
+            return
         data = await self.router.read()
         print('router:', data)
         return data
@@ -54,8 +58,13 @@ class Communicator(object):
         raise Exception("Not implemented")
 
     def empty(self):
-        raise Exception("Not implemented")
+        return self.closed
 
     async def consume(self, data):
         print('dealer:', data)
         await self.dealer.write((data.encode('utf-8'),))
+
+
+    def close(self):
+        self.dealer.close()
+        self.closed = True

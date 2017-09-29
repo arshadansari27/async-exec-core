@@ -26,6 +26,7 @@ class InOutWorker(object):
             if not self.terminate_event.is_set():
                 self.terminate_event.data = 'DONE'
                 self.terminate_event.set()
+                self.consumer.close()
         except:
             traceback.print_exc()
             exit(1)
