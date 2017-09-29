@@ -10,6 +10,7 @@ from uuid import uuid4
 from collections import defaultdict
 import signal
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,7 +65,7 @@ class Flow(object):
         self.ready_events = defaultdict(list)
 
     def exception_handler(self, loop, context):
-        logger.info("[*] Handling exception here", context)
+        logger.info("[*] Handling exception here {}".format(context))
         loop.close()
         self.pool.shutdown()
 
@@ -125,7 +126,7 @@ class Flow(object):
             raise Exception("Cannot add a publisher to middleware without anything to publish from")
         consumers = []
         for queue in queues:
-            logger.info("Adding queue", queue)
+            logger.info("Adding queue {}".format(queue))
             ready_event = asyncio.Event()
             communicator = Communicator()
             publisher = PublisherFactory.instantiate(
@@ -189,7 +190,7 @@ class Flow(object):
         return self
 
     async def start(self):
-        logger.info("Starting", self.id)
+        logger.info("Starting {}".format(self.id))
         self.futures = []
         for coroutine in self.coroutines:
             self.futures.append(self.loop.create_task(coroutine.start()))
@@ -241,9 +242,9 @@ if __name__ == '__main__':
             yield i
 
     def con(data):
-        logger.info('con', data)
+        logger.info('con {}'.format( data))
         diff = datetime.now() - start
-        logger.info(diff.seconds + (diff.microseconds / 1000000))
+        logger.info(str(diff.seconds + (diff.microseconds / 1000000)))
 
 
     import signal
