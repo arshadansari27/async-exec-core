@@ -52,7 +52,7 @@ class Communicator(object):
         #data = await self.router.read()
         #self.router.write(data)
         #return data[1].decode('utf-8')
-        while not self.queue.empty()
+        while not self.queue.empty():
             yield await self.queue.get()
 
     async def publish_nowait(self):
