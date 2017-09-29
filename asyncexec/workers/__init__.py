@@ -36,21 +36,22 @@ class Actor(aiozmq.rpc.AttrHandler):
             traceback.print_exc(file=sys.stdout)
             exit(1)
 
+from collections import deque
 
 class Communicator(object):
 
     def __init__(self):
-        self.queue  = asyncio.Queue()
+        #self.queue  = asyncio.Queue()
+        self.queue  = deque()
         #self.router = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.ROUTER, bind='ipc://*:*'))
         #self.addr = list(self.router.transport.bindings())[0]
         #self.dealer = asyncio.get_event_loop().run_until_complete(aiozmq.create_zmq_stream(zmq.DEALER, connect=self.addr))
         self.closed = False
-        self.queue = aioprocessing.AioQueue()
         print('Communicator')
 
     async def publish(self):
         #data = await self.router.read()
-        await self.queue.get()
+        self.queue.popleft()
         #print('router:', data[1].decode('utf-8'))
         #return data[1].decode('utf-8')
 
@@ -61,7 +62,8 @@ class Communicator(object):
         return self.queue.empty()
 
     async def consume(self, data):
-        await self.queue.put(data)
+        #await self.queue.put(data)
+        self.queue.append(data)
         #print('dealer:', data)
         #await self.dealer.write((data.encode('utf-8'),))
 
