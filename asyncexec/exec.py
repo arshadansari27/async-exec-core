@@ -43,7 +43,7 @@ class AsyncExecutor(object):
             futures.append(future)
         for future in asyncio.gather(*futures):
             f = self.loop.run_until_complete(future)
-            if f.exception():
+            if hasattr(f, 'exception') and f.exception():
                 print(f.exception())
                 exit(1)
 
