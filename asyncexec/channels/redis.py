@@ -1,6 +1,6 @@
 import aioredis
 from asyncexec.channels import Listener, Publisher
-
+import traceback
 
 class RedisListener(Listener):
 
@@ -19,8 +19,8 @@ class RedisListener(Listener):
                     _, message = await conn_pool.blpop(self.queue_name)
                     await self.consumer.consume(message)
         except Exception as e:
-            self.error_handler(e)
-            raise
+            traceback.print_exc()
+            exit(1)
         finally:
             if conn_pool:
                 conn_pool.close()
@@ -44,8 +44,8 @@ class RedisPublisher(Publisher):
                 message = await self.publisher.publish()
                 _ = await conn_pool.lpush(self.queue_name, message)
         except Exception as e:
-            self.error_handler(e)
-            raise
+            traceback.print_exc()
+            exit(1)
         finally:
             if conn_pool:
                 conn_pool.close()

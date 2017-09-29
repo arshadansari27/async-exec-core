@@ -1,5 +1,6 @@
 from uuid import uuid4
 import asyncio
+import traceback
 
 
 class External(object):
@@ -84,9 +85,8 @@ class CompositePublisher(object):
                     print('[CompositePublisher: {}](Publisher) ... done'.format(self.flow_id))
                     break
         except Exception as e:
-            self.error_handler(e)
-            print("Error occured", e)
-            raise
+            traceback.print_exc()
+            exit(1)
 
 
 class ListenerFactory(object):

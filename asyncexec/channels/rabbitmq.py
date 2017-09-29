@@ -2,6 +2,7 @@ import asyncio
 from aio_pika import connect, Message, DeliveryMode, ExchangeType
 from asyncexec.channels import Listener, Publisher
 import random
+import traceback
 
 
 class RabbitMQListener(Listener):
@@ -29,8 +30,8 @@ class RabbitMQListener(Listener):
                 raise Exception("Rabbit Listener: Termination event occurred before starting...")
             in_queue.consume(self.in_message_handler)
         except Exception as e:
-            self.error_handler(e)
-            raise
+            traceback.print_exc()
+            exit(1)
         finally:
             if connection:
                 connection.close()
@@ -61,8 +62,8 @@ class RabbitMQPublisher(Publisher):
                 # print('[RabbitMQ: {}](Publisher) {}'.format(self.flow_id, message))
                 await out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
         except Exception as e:
-            self.error_handler(e)
-            raise
+            traceback.print_exc()
+            exit(1)
         finally:
             if connection:
                 connection.close()
