@@ -59,12 +59,16 @@ class RabbitMQPublisher(Publisher):
                     print('[RabbitMQ: {}](Publisher) done...'.format(self.flow_id))
                     break
                 mms = await self.publisher.publish()
+                futures = []
                 for message in mms:
                     count += 1
                     message_body = Message(str(message).encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
-                    out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
+                    f = out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
+                    futures.append(f)
                     if count % 10 is 0:
                         print('[*] C', count)
+                for f in futures:
+                    await f
         except Exception as e:
             traceback.print_exc()
             exit(1)
