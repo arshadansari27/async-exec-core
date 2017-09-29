@@ -1,5 +1,7 @@
 from . import Actor
 import traceback
+import logging
+logger = logging.getLogger(__name__)
 
 
 class SinkWorker(object):
@@ -33,6 +35,7 @@ class SinkWorker(object):
                         self.callback(result)
 
             except Exception as e:
+                logger.error(e)
                 traceback.print_exc()
                 exit(1)
         if self.callback:
@@ -40,4 +43,4 @@ class SinkWorker(object):
         if not self.terminate_event.is_set():
             self.terminate_event.data = 'DONE'
             self.terminate_event.set()
-        print('Sink worker done..')
+        logger.info('Sink worker done..')

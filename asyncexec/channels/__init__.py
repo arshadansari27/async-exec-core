@@ -1,6 +1,9 @@
 from uuid import uuid4
 import asyncio
 import traceback
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class External(object):
@@ -67,11 +70,11 @@ class CompositePublisher(object):
         try:
             self.ready_event.data = 'CompositePublisher'
             self.ready_event.set()
-            print('[CompositePublisher: {}](Publisher) started...'.format(self.flow_id))
+            logger.info('[CompositePublisher: {}](Publisher) started...'.format(self.flow_id))
             while True:
                 while True:
                     if self.publisher.empty() and self.terminate_event.is_set():
-                        print('[CompositePublisher: {}](Publisher) ... done'.format(self.flow_id))
+                        logger.info('[CompositePublisher: {}](Publisher) ... done'.format(self.flow_id))
                         break
                     message = await self.publisher.publish_nowait()
                     if not message:
@@ -82,10 +85,11 @@ class CompositePublisher(object):
                 for consumer in self.consumers:
                     await consumer.consume(message)
                 if self.publisher.empty() and self.terminate_event.is_set():
-                    print('[CompositePublisher: {}](Publisher) ... done'.format(self.flow_id))
+                    logger.info('[CompositePublisher: {}](Publisher) ... done'.format(self.flow_id))
                     break
         except Exception as e:
             traceback.print_exc()
+            logger.error(e)
             exit(1)
 
 

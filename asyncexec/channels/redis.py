@@ -1,6 +1,8 @@
 import aioredis
 from asyncexec.channels import Listener, Publisher
 import traceback
+import logging
+logger = logging.getLogger(__name__)
 
 class RedisListener(Listener):
 
@@ -19,6 +21,7 @@ class RedisListener(Listener):
                     _, message = await conn_pool.blpop(self.queue_name)
                     await self.consumer.consume(message)
         except Exception as e:
+            logger.error(e)
             traceback.print_exc()
             exit(1)
         finally:
@@ -37,13 +40,14 @@ class RedisPublisher(Publisher):
             conn_pool = await aioredis.create_redis((self.host, self.port))
             self.ready_event.data = 'RedisPublisher'
             self.ready_event.set()
-            print('[Redis: {}](Publisher) started...'.format(self.flow_id))
+            logger.info('[Redis: {}](Publisher) started...'.format(self.flow_id))
             while True:
                 if  self.publisher.empty() and self.terminate_event.is_set():
                     break
                 for message in await self.publisher.publish():
                     _ = await conn_pool.lpush(self.queue_name, message)
         except Exception as e:
+            logger.error(e)
             traceback.print_exc()
             exit(1)
         finally:

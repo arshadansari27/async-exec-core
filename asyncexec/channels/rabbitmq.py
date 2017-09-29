@@ -4,6 +4,9 @@ from asyncexec.channels import Listener, Publisher
 import random
 import traceback
 from concurrent.futures import as_completed
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class RabbitMQListener(Listener):
@@ -14,7 +17,6 @@ class RabbitMQListener(Listener):
     async def in_message_handler(self, message):
         with message.process():
             msg = message.body
-            # print('[RabbitMQ: {}](Listener) {}'.format(self.flow_id, msg))
             await self.consumer.consume(msg)
 
     async def start(self):
@@ -24,13 +26,14 @@ class RabbitMQListener(Listener):
             in_channel = await connection.channel()
             # await in_channel.set_qos(prefetch_count=1)
             in_queue = await in_channel.declare_queue(self.queue_name, durable=False)
-            print('[RabbitMQ: {}](Listener) awaiting to start..'.format(self.flow_id))
+            logger.info('[RabbitMQ: {}](Listener) awaiting to start..'.format(self.flow_id))
             await self.start_event.wait()
-            print('[RabbitMQ: {}](Listener) started..'.format(self.flow_id))
+            logger.info('[RabbitMQ: {}](Listener) started..'.format(self.flow_id))
             if self.terminate_event.is_set():
                 raise Exception("Rabbit Listener: Termination event occurred before starting...")
             in_queue.consume(self.in_message_handler)
         except Exception as e:
+            logger.error(e)
             traceback.print_exc()
             exit(1)
         finally:
@@ -54,16 +57,17 @@ class RabbitMQPublisher(Publisher):
             out_channel = await connection.channel()
             self.ready_event.data = 'RabbitMQPublisher'
             self.ready_event.set()
-            print('[RabbitMQ: {}](Publisher) started...'.format(self.flow_id))
+            logger.info('[RabbitMQ: {}](Publisher) started...'.format(self.flow_id))
             while True:
                 if self.publisher.empty() and self.terminate_event.is_set():
-                    print('[RabbitMQ: {}](Publisher) done...'.format(self.flow_id))
+                    logger.info('[RabbitMQ: {}](Publisher) done...'.format(self.flow_id))
                     break
                 message = await self.publisher.publish()
                 message_body = Message(str(message).encode('utf-8'))
                 await out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
 
         except Exception as e:
+            logger.error(e)
             traceback.print_exc()
             exit(1)
         finally:

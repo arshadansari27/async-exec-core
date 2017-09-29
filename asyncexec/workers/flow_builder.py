@@ -9,6 +9,8 @@ from concurrent.futures import ProcessPoolExecutor
 from uuid import uuid4
 from collections import defaultdict
 import signal
+import logging
+logger = logging.getLogger(__name__)
 
 
 def worker_factory(type='inout'):
@@ -62,7 +64,7 @@ class Flow(object):
         self.ready_events = defaultdict(list)
 
     def exception_handler(self, loop, context):
-        print("[*] Handling exception here", context)
+        logger.info("[*] Handling exception here", context)
         loop.close()
         self.pool.shutdown()
 
@@ -123,7 +125,7 @@ class Flow(object):
             raise Exception("Cannot add a publisher to middleware without anything to publish from")
         consumers = []
         for queue in queues:
-            print("Adding queue", queue)
+            logger.info("Adding queue", queue)
             ready_event = asyncio.Event()
             communicator = Communicator()
             publisher = PublisherFactory.instantiate(
@@ -140,7 +142,7 @@ class Flow(object):
                                                  consumers, ready_event, self.terminate_event,
                                                  flow_id=self.id)
         self.ready_events[self.start_event_name].append(ready_event)
-        print("added composite")
+        logger.info("added composite")
         self.coroutines.append(composite_publisher)
         self.previous_communicator = None
         return self
@@ -187,7 +189,7 @@ class Flow(object):
         return self
 
     async def start(self):
-        print("Starting", self.id)
+        logger.info("Starting", self.id)
         self.futures = []
         for coroutine in self.coroutines:
             self.futures.append(self.loop.create_task(coroutine.start()))
@@ -227,7 +229,7 @@ class Flow(object):
 
 
 if __name__ == '__main__':
-    print("Starting")
+    logger.info("Starting")
     from datetime import datetime
     start  = datetime.now()
     def fun(x):
@@ -239,9 +241,9 @@ if __name__ == '__main__':
             yield i
 
     def con(data):
-        print('con', data)
+        logger.info('con', data)
         diff = datetime.now() - start
-        print(diff.seconds + (diff.microseconds / 1000000))
+        logger.info(diff.seconds + (diff.microseconds / 1000000))
 
 
     import signal

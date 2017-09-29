@@ -4,6 +4,8 @@ import asyncio
 import traceback, sys
 import zmq
 import aioprocessing
+import logging
+logger = logging.getLogger(__name__)
 
 
 class Actor(aiozmq.rpc.AttrHandler):
@@ -32,7 +34,7 @@ class Actor(aiozmq.rpc.AttrHandler):
             else:
                 return None
         except Exception as e:
-            print('Error Occurred in Actor', e)
+            logger.error(e)
             traceback.print_exc(file=sys.stdout)
             exit(1)
 
