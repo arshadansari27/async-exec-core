@@ -65,7 +65,7 @@ class RabbitMQPublisher(Publisher):
                     message_body = Message(str(message).encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
                     f = out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
                     futures.append(f)
-                for f in as_completed(futures):
+                for f in asyncio.gather(*futures):
                     count += 1
                     if count % 10 is 0:
                         print('[*] C', count)
