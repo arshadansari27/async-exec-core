@@ -42,6 +42,9 @@ class AsyncExecutor(object):
             future = self.loop.run_until_complete(flow.start())
             futures.append(future)
         for future in asyncio.gather(*futures):
+            if future.exception():
+                print('*****', future.exception())
+                exit(1)
             print(self.loop.run_until_complete(future))
 
 
