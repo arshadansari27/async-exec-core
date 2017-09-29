@@ -50,7 +50,7 @@ class Communicator(object):
         if self.closed:
             self.router.close()
             return
-        data = await self.router.read()
+        data = await self.router.read()[1].decode('utf-8')
         print('router:', data)
         return data
 
