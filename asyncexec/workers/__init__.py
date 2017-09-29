@@ -2,6 +2,7 @@ import aiozmq
 import aiozmq.rpc
 import asyncio
 import traceback, sys
+import zmq
 
 
 class Actor(aiozmq.rpc.AttrHandler):
@@ -39,17 +40,24 @@ class Communicator(object):
 
     def __init__(self):
         self.queue  = asyncio.Queue()
+        self.router = yield from aiozmq.create_zmq_stream(zmq.ROUTER, bind='ipc://*:*')
+        addr = list(router.transport.bindings())[0]
+        self.dealer = yield from aiozmq.create_zmq_stream(zmq.DEALER, connect=addr)
 
     async def publish(self):
-        return await self.queue.get()
+        data = await self.router.read()
+        print('router:', data)
+        return data
 
     async def publish_nowait(self):
+        raise Exception("Not implemented")
         if self.queue.empty():
             return None
         return self.queue.get_nowait()
 
     def empty(self):
-        return self.queue.empty()
+        raise Exception("Not implemented")
 
     async def consume(self, data):
-        await self.queue.put(data)
+        print('dealer:', data)
+        await self.dealer.write((data.encode('utf-8'),)
