@@ -22,7 +22,7 @@ class RabbitMQListener(Listener):
             connection = await connect(con_uri, loop=self.loop)
             in_channel = await connection.channel()
             # await in_channel.set_qos(prefetch_count=1)
-            in_queue = await in_channel.declare_queue(self.queue_name, durable=True)
+            in_queue = await in_channel.declare_queue(self.queue_name, durable=False)
             print('[RabbitMQ: {}](Listener) awaiting to start..'.format(self.flow_id))
             await self.start_event.wait()
             print('[RabbitMQ: {}](Listener) started..'.format(self.flow_id))
