@@ -46,6 +46,7 @@ class RabbitMQPublisher(Publisher):
         if not self.username or not self.password:
             raise Exception("RabbitMQ Connection requires credentials")
         connection = None
+        count = 0
         try:
             con_uri = "amqp://" + self.username + ":" + self.password + "@" + self.host + ":" + str(self.port) + "/"
             connection = await connect(con_uri, loop=self.loop)
@@ -54,12 +55,15 @@ class RabbitMQPublisher(Publisher):
             self.ready_event.set()
             print('[RabbitMQ: {}](Publisher) started...'.format(self.flow_id))
             while True:
+                count += 1
                 if self.publisher.empty() and self.terminate_event.is_set():
                     print('[RabbitMQ: {}](Publisher) done...'.format(self.flow_id))
                     break
                 message = await self.publisher.publish()
                 message_body = Message(str(message).encode('utf-8'), delivery_mode=DeliveryMode.PERSISTENT)
-                # print('[RabbitMQ: {}](Publisher) {}'.format(self.flow_id, message))
+                if count % 10 is 0:
+                    print('[*] C', count)
+
                 await out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
         except Exception as e:
             traceback.print_exc()

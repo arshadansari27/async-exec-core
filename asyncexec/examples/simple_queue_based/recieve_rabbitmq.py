@@ -13,6 +13,7 @@ message_count = 0
 def on_message(message: IncomingMessage):
     global first_message, message_count, arrival_begin_time_stamp
     with message.process():
+        '''
         if not first_message:
             first_message = True
             arrival_begin_time_stamp = datetime.now()
@@ -20,9 +21,9 @@ def on_message(message: IncomingMessage):
         dd = d.days
         ds = d.seconds
         diff = (3600 * 24) * dd + ds 
-        message_count += 1.
-
-        print("[x] %r" % message.body, message_count / diff if diff > 0 else message_count)
+        '''
+        message_count += 1
+        print("[x] %s %d" % (message.body, message_count))
 
 
 async def main(ip, queue):
