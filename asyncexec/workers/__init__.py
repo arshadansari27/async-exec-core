@@ -47,9 +47,6 @@ class Communicator(object):
         print('Communicator')
 
     async def publish(self):
-        if self.closed:
-            self.router.close()
-            return
         data = await self.router.read()
         print('router:', data[1].decode('utf-8'))
         return data[1].decode('utf-8')
