@@ -32,7 +32,7 @@ class Actor(aiozmq.rpc.AttrHandler):
         except Exception as e:
             print('Error Occurred in Actor', e)
             traceback.print_exc(file=sys.stdout)
-            raise e
+            exit(1)
 
 
 class Communicator(object):
