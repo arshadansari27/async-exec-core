@@ -1,4 +1,5 @@
 from . import Actor
+import traceback
 
 
 class InOutWorker(object):
@@ -15,12 +16,16 @@ class InOutWorker(object):
     async def start(self):
         self.ready_event.data = 'InOutWorker'
         self.ready_event.set()
-        while True:
-            if self.publisher.empty() and self.terminate_event.is_set():
-                break
-            data = await self.publisher.publish()
-            response = await self.client.call.handler(data)
-            await self.consumer.consume(response)
-        if not self.terminate_event.is_set():
-            self.terminate_event.data = 'DONE'
-            self.terminate_event.set()
+        try:
+            while True:
+                if self.publisher.empty() and self.terminate_event.is_set():
+                    break
+                data = await self.publisher.publish()
+                response = await self.client.call.handler(data)
+                await self.consumer.consume(response)
+            if not self.terminate_event.is_set():
+                self.terminate_event.data = 'DONE'
+                self.terminate_event.set()
+        except:
+            traceback.print_exc()
+            exit(1)

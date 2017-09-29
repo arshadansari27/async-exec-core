@@ -1,4 +1,5 @@
 from . import Actor
+import traceback
 
 
 class SinkWorker(object):
@@ -32,8 +33,8 @@ class SinkWorker(object):
                     self.callback(result)
 
             except Exception as e:
-                print('Error occured', e)
-                raise
+                traceback.print_exc()
+                exit(1)
         if self.callback:
             self.callback(result)
         if not self.terminate_event.is_set():

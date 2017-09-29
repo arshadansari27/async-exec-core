@@ -1,6 +1,7 @@
 import asyncio
 import aioprocessing
 from uuid import uuid4
+import traceback
 
 TERMINATOR = 'TERM:' + str(uuid4())
 
@@ -57,5 +58,6 @@ class GeneratorWorker(object):
         except Exception as e:
             self.terminate_event.data = str(e)
             self.terminate_event.set()
-            raise
+            traceback.print_exc()
+            exit(1)
         print("Generator: Done...")
