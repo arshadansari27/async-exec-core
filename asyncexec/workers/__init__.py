@@ -45,15 +45,13 @@ class Communicator(object):
 
     async def publish(self):
         responses = []
-        print("Waiting on publish...")
-        while not self.queue.empty():
-            print("publish has data...")
+        while True:
+            print("Waiting on publish...")
             data = await self.queue.get()
             print("Adding to response", data)
             responses.append(data)
-            if len(response) > 1:
+            if len(response) > 10:
                 return response
-
         return responses
 
     async def publish_nowait(self):
