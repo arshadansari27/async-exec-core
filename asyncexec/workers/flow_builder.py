@@ -68,6 +68,7 @@ class Flow(object):
         logger.info("[*] Handling exception here {}".format(context))
         loop.close()
         self.pool.shutdown()
+        exit(1)
 
     def add_http_listener(self, endpoint):
         self.start_event = asyncio.Event()
