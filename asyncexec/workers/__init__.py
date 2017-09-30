@@ -46,7 +46,9 @@ class Communicator(object):
         self.queue  = asyncio.Queue()
 
     async def publish(self):
-        return await self.queue.get()
+        uu = await self.queue.get()
+        print("----->", uu)
+        return uu
 
     async def publish_nowait(self):
         raise Exception("Not implemented")
