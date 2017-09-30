@@ -22,7 +22,7 @@ class InOutWorker(object):
             while True:
                 if self.publisher.empty() and self.terminate_event.is_set():
                     break
-                data = await self.publisher.publish():
+                data = await self.publisher.publish()
                 response = await self.client.call.handler(data)
                 await self.consumer.consume(response)
             if not self.terminate_event.is_set():
