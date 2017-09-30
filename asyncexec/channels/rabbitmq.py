@@ -17,6 +17,7 @@ class RabbitMQListener(Listener):
     async def in_message_handler(self, message):
         with message.process():
             msg = message.body
+            print("---->", msg)
             await self.consumer.consume(msg)
 
     async def start(self):
