@@ -24,7 +24,7 @@ class RabbitMQListener(Listener):
             con_uri = "amqp://" + self.username + ":" + self.password + "@" + self.host + ":" + str(self.port) + "/"
             connection = await connect(con_uri, loop=self.loop)
             in_channel = await connection.channel()
-            # await in_channel.set_qos(prefetch_count=1)
+            await in_channel.set_qos(prefetch_count=1)
             in_queue = await in_channel.declare_queue(self.queue_name, durable=False)
             logger.info('[RabbitMQ: {}](Listener) awaiting to start..'.format(self.flow_id))
             await self.start_event.wait()
