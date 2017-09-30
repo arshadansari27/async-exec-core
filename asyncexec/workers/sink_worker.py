@@ -30,6 +30,7 @@ class SinkWorker(object):
                 if self.publisher.empty() and self.terminate_event.is_set():
                     break
                 for data in await self.publisher.publish():
+                    print('*****', data)
                     result = await self.client.call.handler(result, data)
                     if self.count and self.callback and (count % self.count is 0):
                         self.callback(result)

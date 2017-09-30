@@ -35,7 +35,7 @@ async def main(ip, queue):
     await channel.set_qos(prefetch_count=1)
 
     # Declaring queue
-    queue = await channel.declare_queue(queue, durable=True)
+    queue = await channel.declare_queue(queue, durable=False)
 
     # Binding the queue to the exchange
 
