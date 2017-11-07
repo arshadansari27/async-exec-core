@@ -27,6 +27,14 @@ class AsyncExecutor(object):
             password = redis.get('password', 'guest')
             self.channel_configurations['redis'] = (host, port, username, password)
 
+        if 'kafka' in configurations:
+            kafka = configurations['kafka']
+            host = kafka['host']
+            port = kafka['port']
+            username = None
+            password = None
+            self.channel_configurations['kafka'] = (host, port, username, password)
+
         if 'http' in configurations:
             http = configurations['http']
             port = http['port']

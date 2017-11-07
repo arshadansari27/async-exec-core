@@ -25,6 +25,10 @@ async_executor = AsyncExecutor({
     "redis": {
         "host": "172.17.0.3",
         "port": 6379
+    },
+    "kafka": {
+        "host": "localhost",
+        "port": 9092
     }
 })
 
@@ -37,18 +41,15 @@ def _collector(result, data):
     result = result + int(data)
     return result
 
-@async_executor.publisher('rabbitmq', 'test_queue1')
+@async_executor.publisher('kafka', 'test_queue1')
 def _generator():
     for i in range(10):
         yield i
 
-@async_executor.handle_and_collect('rabbitmq', 'test_queue1', reducer=_collector, callback=callback, count=2)
+@async_executor.handle_and_collect('kafka', 'test_queue1', reducer=_collector, callback=callback, count=2)
 def _handler(data):
-    print ("Called 1", data)
+    print ("Called:", data)
     return int(data) * 2
-
-
-
 
 
 '''

@@ -50,6 +50,7 @@ class TestFlow(unittest.TestCase):
 
 
     def test_flow(self):
+        '''
         flow = Flow(self.config, loop=self.loop)\
             .add_generator(gen)\
             .add_broadcast_publisher('rabbitmq', 'testing1', 'testing2')
@@ -59,6 +60,7 @@ class TestFlow(unittest.TestCase):
             #.add_sink(con2)
         future = self.loop.run_until_complete(flow.start())
         print(self.loop.run_until_complete(future))
+        '''
 
     def tearDown(self):
         pass

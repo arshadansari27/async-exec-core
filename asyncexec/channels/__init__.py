@@ -99,10 +99,13 @@ class ListenerFactory(object):
     def instantiate(name, loop, configurations, queue_name, consumer, start_event, terminate_event, flow_id=None):
         from asyncexec.channels.rabbitmq import RabbitMQListener
         from asyncexec.channels.redis import RedisListener
+        from asyncexec.channels.kafka import KafkaListener
         if name == 'rabbitmq':
             return RabbitMQListener(loop, configurations, queue_name, consumer, start_event, terminate_event, flow_id=flow_id)
         elif name == 'redis':
             return RedisListener(loop, configurations, queue_name, consumer, start_event, terminate_event, flow_id=flow_id)
+        elif name == 'kafka':
+            return KafkaListener(loop, configurations, queue_name, consumer, start_event, terminate_event, flow_id=flow_id)
         else:
             raise Exception('Not implemented')
 
@@ -113,10 +116,13 @@ class PublisherFactory(object):
     def instantiate(name, loop, configurations, queue_name, publisher, ready_event, terminate_event, flow_id=None):
         from asyncexec.channels.rabbitmq import RabbitMQPublisher
         from asyncexec.channels.redis import RedisPublisher
+        from asyncexec.channels.kafka import KafkaPublisher
         if name == 'rabbitmq':
             return RabbitMQPublisher(loop, configurations, queue_name, publisher, ready_event, terminate_event, flow_id=flow_id)
         elif name == 'redis':
             return RedisPublisher(loop, configurations, queue_name, publisher, ready_event, terminate_event, flow_id=flow_id)
+        elif name == 'kafka':
+            return KafkaPublisher(loop, configurations, queue_name, publisher, ready_event, terminate_event, flow_id=flow_id)
         else:
             raise Exception('Not implemented')
 
