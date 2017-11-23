@@ -46,7 +46,7 @@ class GeneratorWorker(object):
             logger.info("Generator: Begun.")
             self.process.start()
             while True:
-                if self.queue.empty() and (self.terminate_event.is_set() or self._event.is_set()):i
+                if self.queue.empty() and (self.terminate_event.is_set() or self._event.is_set()):
                     logger.info("Queue is empty, terminating.")
                     exit(0)
                 if not self.queue.empty():
