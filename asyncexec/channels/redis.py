@@ -45,6 +45,10 @@ class RedisPublisher(Publisher):
                 if  self.publisher.empty() and self.terminate_event.is_set():
                     break
                 for message in await self.publisher.publish():
+                    if message == 'FAKE_SIGNALLING_DATA_TO_TERMINATE':
+                        logger.info("Received signal to terminate process")
+                        continue
+
                     _ = await conn_pool.lpush(self.queue_name, message)
         except Exception as e:
             logger.error(e)

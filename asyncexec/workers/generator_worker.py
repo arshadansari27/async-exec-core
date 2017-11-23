@@ -47,8 +47,7 @@ class GeneratorWorker(object):
             self.process.start()
             while True:
                 if self.queue.empty() and (self.terminate_event.is_set() or self._event.is_set()):
-                    logger.info("Queue is empty, terminating.")
-                    exit(0)
+                    break
                 if not self.queue.empty():
                     data = await self.queue.coro_get()
                     await self.consumer.consume(data)
@@ -57,6 +56,7 @@ class GeneratorWorker(object):
             await self.process.coro_join()
             self.terminate_event.data = 'DONE'
             self.terminate_event.set()
+            await self.consumer.consume('FAKE_SIGNALLING_DATA_TO_TERMINATE')
         except Exception as e:
             self.terminate_event.data = str(e)
             self.terminate_event.set()
