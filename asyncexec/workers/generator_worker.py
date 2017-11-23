@@ -56,6 +56,7 @@ class GeneratorWorker(object):
             await self.process.coro_join()
             self.terminate_event.data = 'DONE'
             self.terminate_event.set()
+            await self.consumer.consume('FAKE_SIGNALLING_DATA_TO_TERMINATE')
         except Exception as e:
             self.terminate_event.data = str(e)
             self.terminate_event.set()

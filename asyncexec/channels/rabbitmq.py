@@ -63,6 +63,10 @@ class RabbitMQPublisher(Publisher):
                     logger.info('[RabbitMQ: {}](Publisher) done...'.format(self.flow_id))
                     break
                 message = await self.publisher.publish()
+
+                if message == 'FAKE_SIGNALLING_DATA_TO_TERMINATE':
+                    logger.info("Received signal to terminate process")
+                    continue
                 message_body = Message(str(message).encode('utf-8'))
                 await out_channel.default_exchange.publish(message_body, routing_key=self.queue_name)
 
