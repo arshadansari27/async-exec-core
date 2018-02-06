@@ -1,7 +1,7 @@
 import asyncio
 
 from asyncexec.workers.generator_worker import GeneratorWorker
-from asyncexec.workers.inout_worker import InOutWorker
+from asyncexec.workers.inout_worker import InOutWorker, InOutManyWorker
 from asyncexec.workers.sink_worker import SinkWorker
 from asyncexec.workers import Communicator
 from asyncexec.channels import PublisherFactory, ListenerFactory
@@ -182,6 +182,20 @@ class Flow(object):
         next_communicator = Communicator()
         ready_event = asyncio.Event()
         in_out_worker = InOutWorker(
+            self.loop, self.pool, func, self.previous_communicator, next_communicator,
+            ready_event, self.terminate_event
+        )
+        self.ready_events[self.start_event_name].append(ready_event)
+        self.previous_communicator = next_communicator
+        self.coroutines.append(in_out_worker)
+        return self
+
+    def add_worker_many(self, func):
+        if self.previous_communicator is None or len(self.coroutines) is 0:
+            raise Exception("Cannot add a worker without anything to listen from")
+        next_communicator = Communicator()
+        ready_event = asyncio.Event()
+        in_out_worker = InOutManyWorker(
             self.loop, self.pool, func, self.previous_communicator, next_communicator,
             ready_event, self.terminate_event
         )

@@ -23,7 +23,7 @@ async_executor = AsyncExecutor({
         "password": "guest"
     },
     "redis": {
-        "host": "172.17.0.3",
+        "host": "localhost",
         "port": 6379
     },
     "kafka": {
@@ -41,15 +41,15 @@ def _collector(result, data):
     result = result + int(data)
     return result
 
-@async_executor.publisher('kafka', 'test_queue1')
-def _generator():
-    for i in range(10):
-        yield i
 
-@async_executor.handle_and_collect('kafka', 'test_queue1', reducer=_collector, callback=callback, count=2)
+
+@async_executor.handle_and_publish_many('redis', 'test_queue1', 'redis', 'test_queue2')
 def _handler(data):
-    print ("Called:", data)
-    return int(data) * 2
+    dd = []
+    for i in range(1, 10):
+        print ("Called:", i)
+        dd.append(int(data) * i)
+    return dd
 
 
 '''
