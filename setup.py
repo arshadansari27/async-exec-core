@@ -3,7 +3,7 @@
 from setuptools import find_packages, setup
 
 install_reqs = open('requirements.txt').readlines()
-reqs = [str(ir.req) for ir in install_reqs]
+reqs = [str(ir) for ir in install_reqs]
 
 setup(
     name='asyncexec',
