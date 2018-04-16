@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-from pip.req import parse_requirements
 from setuptools import find_packages, setup
 
-install_reqs = parse_requirements('requirements.txt', session=False)
+install_reqs = open('requirements.txt').readlines()
 reqs = [str(ir.req) for ir in install_reqs]
 
 setup(
