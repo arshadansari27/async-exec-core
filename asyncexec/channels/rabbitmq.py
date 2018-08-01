@@ -13,7 +13,7 @@ class RabbitMQListener(Listener):
 
     def __init__(self, loop, configurations, queue_name, consumer, start_event, terminate_event, flow_id=None):
         super(RabbitMQListener, self).__init__(loop, configurations, queue_name, consumer, start_event, terminate_event, flow_id=flow_id)
-        self.prefetch = 1 if configurations.get('prefetch', None) else \
+        self.prefetch = 1 if not configurations.get('prefetch', None) else \
             configurations['prefetch']
         print("[Rabbitmq] Prefetch using: ", self.prefetch)
 
