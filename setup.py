@@ -7,7 +7,7 @@ reqs = [str(ir) for ir in install_reqs]
 
 setup(
     name='asyncexec',
-    version='0.3.0',
+    version='0.3.3',
     packages=find_packages(),
     include_package_data=True,
     install_requires=reqs,
