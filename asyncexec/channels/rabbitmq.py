@@ -13,6 +13,8 @@ class RabbitMQListener(Listener):
 
     def __init__(self, loop, configurations, queue_name, consumer, start_event, terminate_event, flow_id=None):
         super(RabbitMQListener, self).__init__(loop, configurations, queue_name, consumer, start_event, terminate_event, flow_id=flow_id)
+        self.prefetch = 1 if configurations('prefetch', None) else \
+            configurations['prefetch']
 
     async def in_message_handler(self, message):
         with message.process():
@@ -24,7 +26,7 @@ class RabbitMQListener(Listener):
             con_uri = "amqp://" + self.username + ":" + self.password + "@" + self.host + ":" + str(self.port) + "/"
             connection = await connect(con_uri, loop=self.loop)
             in_channel = await connection.channel()
-            await in_channel.set_qos(prefetch_count=1)
+            await in_channel.set_qos(prefetch_count=self.prefetch)
             in_queue = await in_channel.declare_queue(self.queue_name, durable=False)
             logger.info('[RabbitMQ: {}](Listener) awaiting to start..'.format(self.flow_id))
             await self.start_event.wait()
