@@ -15,6 +15,7 @@ class RabbitMQListener(Listener):
         super(RabbitMQListener, self).__init__(loop, configurations, queue_name, consumer, start_event, terminate_event, flow_id=flow_id)
         self.prefetch = 1 if configurations.get('prefetch', None) else \
             configurations['prefetch']
+        print("[Rabbitmq] Prefetch using: ", self.prefetch)
 
     async def in_message_handler(self, message):
         with message.process():
